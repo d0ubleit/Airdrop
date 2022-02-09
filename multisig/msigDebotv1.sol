@@ -77,6 +77,14 @@ abstract contract Utility {
 /// @notice Multisig Debot v1 (with debot interfaces).
 contract MsigDebot is Debot, Upgradable, Transferable, Utility {
 
+    ///////////////////////////////
+    //Added
+
+    address m_token_wallet;
+    address m_airdrop;
+
+    ///////////////////////////////
+
     address m_wallet;
     uint128 m_balance;
     CustodianInfo[] m_custodians;
@@ -111,8 +119,61 @@ contract MsigDebot is Debot, Upgradable, Transferable, Utility {
     //
 
     function start() public override {
+        //_start();
+        start1();
+    }
+
+
+    /////////////////////////////////////////
+    //Added
+
+    function start1() private {
+        AddressInput.get(tvm.functionId(setAirdropAddr), "Please input ClientAirdrop address:");
+    }
+
+    function setAirdropAddr(address _m_airdrop) public {
+        if (_m_airdrop == address(0)) {
+            Terminal.print(0, "Wrong address");
+            start1();
+        }
+        else {
+            m_airdrop = _m_airdrop;
+            getDetails();
+        }
+    } 
+
+    function getDetails() private view {
+        optional(uint256) none;
+        IAirdrop(m_airdrop).getDetails{
+            abiVer: 2,
+            extMsg: true,
+            sign: false,
+            pubkey: none,
+            time: uint64(now),
+            expire: 0,
+            callbackId: setClientAirdropAddr,
+            onErrorId: 0
+        }();
+        
+    }
+
+    function setClientAirdropAddr(
+        address _token,
+        address _token_wallet,
+        uint128 _transferred_count,
+        address _airdrop_sc,
+        uint128 _airdrop_sc_balance
+        ) public {
+        
+        m_token_wallet = _token_wallet;
         _start();
     }
+
+
+
+    /////////////////////////////////////////
+
+
 
     function _start() private {
         AddressInput.get(tvm.functionId(startChecks), "Which wallet do you want to work with?");
@@ -123,13 +184,13 @@ contract MsigDebot is Debot, Upgradable, Transferable, Utility {
         string name, string version, string publisher, string caption, string author,
         address support, string hello, string language, string dabi, bytes icon
     ) {
-        name = "Multisig";
-        version = format("{}.{}.{}", 1,2,0);
-        publisher = "TON Labs";
-        caption = "DeBot for multisig wallets";
-        author = "TON Labs";
-        support = address.makeAddrStd(0, 0x66e01d6df5a8d7677d9ab2daf7f258f1e2a7fe73da5320300395f99e01dc3b5f);
-        hello = "Hi, I will help you work with multisig wallets that can have multiple custodians.";
+        name = "Airdrop";
+        version = format("{}.{}.{}", 0,0,1);
+        publisher = "Radiance team";
+        caption = "DeBot for Airdrops";
+        author = "Radiance team";
+        support = address.makeAddrStd(0, 0x66e01d6df5a8d7677d9ab2daf7f258f1e2a7fe73da5320300395f99e01dc3b5f);  //FIX
+        hello = "Hi, I will help you to make airdrops easier!";
         language = "en";
         dabi = m_debotAbi.get();
         icon = m_icon;
@@ -214,8 +275,21 @@ contract MsigDebot is Debot, Upgradable, Transferable, Utility {
             tonsToStr(m_balance), m_custodians.length, m_transactions.length);
         Terminal.print(0, str);
 
-        _gotoMainMenu();
+        //_gotoMainMenu();
+
+        getClientStatus();
+
     }
+
+    //////////////////////////////
+    //Added
+
+    function getClientStatus() {
+
+    }
+
+    ///////////////////////////////
+
 
     function startSubmit(uint32 index) public {
         index = index;
