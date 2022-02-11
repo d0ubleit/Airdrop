@@ -7,10 +7,10 @@ import "Interfaces/IRootTokenContract.sol";
 import "Interfaces/ITONTokenWallet.sol";
 import "Interfaces/ITokensReceivedCallback.sol";
 import "Libraries/MsgFlag.sol";
-import "CheckOwner.sol";
+import "ACheckOwner.sol";
 
 // part of main Airdrop SC (edit what you need)
-contract Airdrop is CheckOwner, ITokensReceivedCallback {
+contract Airdrop is ACheckOwner, ITokensReceivedCallback {
     address token;
     address token_wallet;
 
@@ -53,8 +53,8 @@ contract Airdrop is CheckOwner, ITokensReceivedCallback {
 
 
 
-    function AirDrop(address clientAddress, address[] arrayAddresses, uint256 [] arrayValues) onlyOwner public returns (bool) {
-        require(arrayAddresses.length = arrayValues.length && arrayAddresses > 0, 102);
+    function AirDrop(address clientAddress, address[] arrayAddresses, uint256 [] arrayValues) checkOwner public returns (bool) {
+        require(arrayAddresses.length == arrayValues.length && arrayAddresses.length > 0, 102);
         uint256 count = arrayAddresses.length;
         for (uint256 i = 0; i < count; i++)
             {
@@ -65,7 +65,7 @@ contract Airdrop is CheckOwner, ITokensReceivedCallback {
                 flag: MsgFlag.ALL_NOT_RESERVED
             }(
                 arrayAddresses [i],
-                arrayValues [i],
+                uint128(arrayValues [i]),
                 transfer_grams,
                 clientAddress,
                 false,
@@ -195,6 +195,10 @@ contract Airdrop is CheckOwner, ITokensReceivedCallback {
     }
 
     function getTokensBack(uint128 amount) external view {
+        uint256 tokensBack_required_value = 150000000;
+        
+        
+        
         require(receivers.exists(msg.sender) && amount <= receivers[msg.sender], 104);
         
         tvm.rawReserve(address(this).balance - msg.value, 2);

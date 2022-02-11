@@ -1,0 +1,110 @@
+{
+	"ABI version": 2,
+	"header": ["pubkey", "time", "expire"],
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+				{"name":"_token","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "AirDrop",
+			"inputs": [
+				{"name":"clientAddress","type":"address"},
+				{"name":"arrayAddresses","type":"address[]"},
+				{"name":"arrayValues","type":"uint256[]"}
+			],
+			"outputs": [
+				{"name":"value0","type":"bool"}
+			]
+		},
+		{
+			"name": "tokensReceivedCallback",
+			"inputs": [
+				{"name":"token_wallet","type":"address"},
+				{"name":"token_root","type":"address"},
+				{"name":"amount","type":"uint128"},
+				{"name":"sender_public_key","type":"uint256"},
+				{"name":"sender_address","type":"address"},
+				{"name":"sender_wallet","type":"address"},
+				{"name":"original_gas_to","type":"address"},
+				{"name":"updated_balance","type":"uint128"},
+				{"name":"payload","type":"cell"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getCallback",
+			"inputs": [
+				{"name":"id","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"token_wallet","type":"address"},
+				{"name":"token_root","type":"address"},
+				{"name":"amount","type":"uint128"},
+				{"name":"sender_public_key","type":"uint256"},
+				{"name":"sender_address","type":"address"},
+				{"name":"sender_wallet","type":"address"},
+				{"name":"original_gas_to","type":"address"},
+				{"name":"updated_balance","type":"uint128"},
+				{"name":"payload_arg0","type":"uint8"},
+				{"name":"payload_arg1","type":"address"},
+				{"name":"payload_arg2","type":"address"},
+				{"name":"payload_arg3","type":"uint128"},
+				{"name":"payload_arg4","type":"uint128"}
+			]
+		},
+		{
+			"name": "setTokenWalletAddress",
+			"inputs": [
+				{"name":"wallet","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getDetails",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"_token","type":"address"},
+				{"name":"_token_wallet","type":"address"},
+				{"name":"_transferred_count","type":"uint128"},
+				{"name":"_airdrop_sc","type":"address"},
+				{"name":"_airdrop_sc_balance","type":"uint128"}
+			]
+		},
+		{
+			"name": "getTokensBack",
+			"inputs": [
+				{"name":"amount","type":"uint128"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "callbacks",
+			"inputs": [
+			],
+			"outputs": [
+				{"components":[{"name":"token_wallet","type":"address"},{"name":"token_root","type":"address"},{"name":"amount","type":"uint128"},{"name":"sender_public_key","type":"uint256"},{"name":"sender_address","type":"address"},{"name":"sender_wallet","type":"address"},{"name":"original_gas_to","type":"address"},{"name":"updated_balance","type":"uint128"},{"name":"payload_arg0","type":"uint8"},{"name":"payload_arg1","type":"address"},{"name":"payload_arg2","type":"address"},{"name":"payload_arg3","type":"uint128"},{"name":"payload_arg4","type":"uint128"}],"name":"callbacks","type":"map(uint256,tuple)"}
+			]
+		},
+		{
+			"name": "counterCallback",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"counterCallback","type":"uint256"}
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	]
+}
