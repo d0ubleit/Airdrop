@@ -53,7 +53,7 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
 
 
 
-    function AirDrop(address clientAddress, address[] arrayAddresses, uint256 [] arrayValues) checkOwner public returns (bool) {
+    function AirDrop(address clientWalletAddress, address[] arrayAddresses, uint256 [] arrayValues) checkOwner external {
         require(arrayAddresses.length == arrayValues.length && arrayAddresses.length > 0, 102);
         uint256 count = arrayAddresses.length;
         for (uint256 i = 0; i < count; i++)
@@ -67,7 +67,7 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
                 arrayAddresses [i],
                 uint128(arrayValues [i]),
                 transfer_grams,
-                clientAddress,
+                clientWalletAddress,
                 false,
                 empty
             );
@@ -124,7 +124,7 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
     }
 
    // Function for get callback
-        function getCallback(uint id) public view checkOwnerAndAccept returns (
+    function getCallback(uint id) public view checkOwnerAndAccept returns (
         address token_wallet,
         address token_root,
         uint128 amount,

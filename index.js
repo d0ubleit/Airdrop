@@ -3,12 +3,9 @@ const path = require('path');
 const { TonClient, abiContract, signerKeys, signerNone, abiJson } = require('@tonclient/core');
 const { libNode } = require('@tonclient/lib-node');
 
-const contractsDir = "d:/Different/projects/nodeJS/sdk-samples/core-examples/node-js/hello-wallet/contracts/"
+const contractsDir = "/home/alex/Projects/Airdrop/contracts/"
+// const contractsDir = "d:/Different/projects/nodeJS/sdk-samples/core-examples/node-js/hello-wallet/contracts/"
 
-// ABI and imageBase64 of a binary HelloWallet contract
-//const { HelloWallet } = require('./contracts/HelloWallet.js');
-const GIVER_ABI = require('./contracts/GiverV2.abi.json');
-const GIVER_KEYS = readKeysFromFile('GiverV2.keys.json');
 
 /**
  * If you are running this script not on the TON OS SE, you should:
@@ -16,8 +13,23 @@ const GIVER_KEYS = readKeysFromFile('GiverV2.keys.json');
  *  - change `GIVER_ADDRESS`
  *  - write down giver keys into 'GiverV2.keys.json'
  */
-const ENDPOINTS = ['http://localhost'];
-const GIVER_ADDRESS = '0:b5e9240fc2d2f1ff8cbb1d1dee7fb7cae155e5f6320e585fcc685698994a19a5';
+///////////////////////////
+/////////Local SE//////////
+// const GIVER_ABI = require('./contracts/GiverV2.abi.json');
+// const GIVER_KEYS = readKeysFromFile('GiverV2.keys.json');
+// const ENDPOINTS = ['http://localhost'];
+// const GIVER_ADDRESS = '0:b5e9240fc2d2f1ff8cbb1d1dee7fb7cae155e5f6320e585fcc685698994a19a5';
+///////////////////////////
+
+///////////////////////////
+/////////Dev net///////////
+const GIVER_ABI = require('./contracts/Mygiver.abi.json');
+const GIVER_KEYS = readKeysFromFile('Mygiver.keys.json');
+const ENDPOINTS = ['net1.ton.dev', 'net5.ton.dev'];
+const GIVER_ADDRESS = '0:201c6d9f5f448f2303117353e6ecebf28224d3ba44a9d966a9a5bb0bfd1ce1ed';
+///////////////////////////
+
+
 
 // Link the platform-dependable TON-SDK binary with the target Application in Typescript
 // This is a Node.js project, so we link the application with `libNode` binary
@@ -27,6 +39,7 @@ const GIVER_ADDRESS = '0:b5e9240fc2d2f1ff8cbb1d1dee7fb7cae155e5f6320e585fcc68569
 // (see README in  https://github.com/tonlabs/ton-client-js)
 
 const RootToken_ABI = require('./contracts/RootTokenContract.abi.json');
+// const RootToken_TVC = fs.readFileSync('./contracts/RootTokenContract.tvc', 'base64');
 const RootToken_TVC = fs.readFileSync(contractsDir + 'RootTokenContract.tvc', 'base64');
 //const RootToken_TVC = fs.readFileSync("RootTokenContract.tvc", 'base64');
 
@@ -49,6 +62,12 @@ var runProcess = childProcess.execSync('cd contracts && tondev sol compile AirDr
 const AirDrop_ABI = require('./contracts/AirDrop.abi.json');
 const AirDrop_TVC = fs.readFileSync(contractsDir + 'AirDrop.tvc', 'base64');
 
+var childProcess = require('child_process');
+var runProcess = childProcess.execSync('cd contracts && tondev sol compile ClientAirDrop.sol').toString();
+const ClientAirDrop_ABI = require('./contracts/ClientAirDrop.abi.json');
+const ClientAirDrop_TVC = fs.readFileSync(contractsDir + 'ClientAirDrop.tvc', 'base64');
+
+const TONTokenWallet_ABI = require('./contracts/TONTokenWallet.abi.json');
 
 
 
@@ -74,7 +93,7 @@ const AirDrop_TVC = fs.readFileSync(contractsDir + 'AirDrop.tvc', 'base64');
         const RootTokenAddress = await calcAddress(deployMsg, "RootTokenContract");
 
         // Send some tokens to `RootTokenAddress` before deploy
-        await getTokensFromGiver(RootTokenAddress, 100_000_000_000);
+        await getTokensFromGiver(RootTokenAddress, 2_000_000_000);
 
         //Deploy RootTokenWallet
         await deployWallet(deployMsg, "RootTokenContract");
@@ -89,8 +108,8 @@ const AirDrop_TVC = fs.readFileSync(contractsDir + 'AirDrop.tvc', 'base64');
         // let transLt = await touchWallet(RootTokenAddress);
         deployInput = { "_token": RootTokenAddress };
         deployMsg = buildDeployOptions(RootTokenKeys, AirDrop_ABI, AirDrop_TVC, deployData = {}, deployInput);
-        AirDropAddress = await calcAddress(deployMsg, "AirDrop");
-        await getTokensFromGiver(AirDropAddress, 100_000_000_000);
+        const AirDropAddress = await calcAddress(deployMsg, "AirDrop");
+        await getTokensFromGiver(AirDropAddress, 5_000_000_000);
         await deployWallet(deployMsg, "AirDrop");
 
 
@@ -101,17 +120,37 @@ const AirDrop_TVC = fs.readFileSync(contractsDir + 'AirDrop.tvc', 'base64');
         console.log(`AirDrop Wallet address is ${AirDropWalletAddress}`);
         // await callGetFunctionWithAccept(AirDropAddress, AirDrop_ABI, "getDetails")
 
-        console.log(`Lets try to mint 10 tokens to AirDrop Wallet address`);
-        await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "mint", { "tokens": 10, "to": AirDropWalletAddress });
-        console.log(`Check total supply`);
-        output = await callGetFunctionNoAccept(RootTokenAddress, RootToken_ABI, "getDetails", { "_answer_id": 0 });
-        // var total_supply = output.value0.total_supply
-        console.log(`total supply = ${output.value0.total_supply}`);
+
+        /////////////CHECK MINTING
+        // console.log(`Lets try to mint 10 tokens to AirDrop Wallet address`);
+        // await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "mint", { "tokens": 10, "to": AirDropWalletAddress });
+        // console.log(`Check total supply`);
+        // output = await callGetFunctionNoAccept(RootTokenAddress, RootToken_ABI, "getDetails", { "_answer_id": 0 });
+        // console.log(`total supply = ${output.value0.total_supply}`);
 
         ///////////////////////////
         //AirDropClient
         ///////////////////////////
         const userKeys = await client.crypto.generate_random_sign_keys();
+        
+        deployInput = { "_token": RootTokenAddress, "_AirDropAddress": AirDropAddress};
+        deployMsg = buildDeployOptions(userKeys, ClientAirDrop_ABI, ClientAirDrop_TVC, deployData = {}, deployInput);
+        const ClientAirDropAddress = await calcAddress(deployMsg, "ClientAirDrop");
+        await getTokensFromGiver(ClientAirDropAddress, 5_000_000_000);
+        await deployWallet(deployMsg, "ClientAirDrop");
+        
+        var output = await callGetFunctionNoAccept(ClientAirDropAddress, ClientAirDrop_ABI, "getDetails");
+        const ClientAirDropWalletAddress = output._token_wallet;
+        console.log(`ClientAirDrop Wallet address is ${ClientAirDropWalletAddress}`);
+
+        /////////
+        //Mint tokens to client wallet
+        console.log(`Minting 10 tokens to Client Wallet`);
+        await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "mint", { "tokens": 10, "to": ClientAirDropWalletAddress });
+        console.log(`Check Client wallet address`);
+        var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", {"_answer_id": 0 });
+        console.log(`Client Wallet balance is ${output.value0}`);
+
 
 
 
@@ -177,18 +216,41 @@ function buildDeployOptions(keys, contractABI, contractTVC, cotractData = {}, co
 // Request funds from Giver contract
 async function getTokensFromGiver(dest, value) {
     console.log(`Transfering ${value} tokens from giver to ${dest}`);
+    //////////
+    //LOCAL SE
 
+    // const params = {
+    //     send_events: false,
+    //     message_encode_params: {
+    //         address: GIVER_ADDRESS,
+    //         abi: abiContract(GIVER_ABI),
+    //         call_set: {
+    //             function_name: 'sendTransaction',
+    //             input: {
+    //                 dest,
+    //                 value,
+    //                 bounce: false,
+    //             },
+    //         },
+    //         signer: {
+    //             type: 'Keys',
+    //             keys: GIVER_KEYS,
+    //         },
+    //     },
+    // };
+
+    //////////
+    //DEV NET
     const params = {
         send_events: false,
         message_encode_params: {
             address: GIVER_ADDRESS,
             abi: abiContract(GIVER_ABI),
             call_set: {
-                function_name: 'sendTransaction',
+                function_name: 'sendTransactionSimple',
                 input: {
                     dest,
                     value,
-                    bounce: false,
                 },
             },
             signer: {

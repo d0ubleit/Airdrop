@@ -6,6 +6,6 @@ pragma AbiHeader expire;
 interface InterfaseAirDrop {
     function checkAirDrop (address clientAddress, uint256 value, address [] arrayAddresses, uint256 [] arrayValues) external; 
 
-    function AirDrop(address clientAddress, address[] arrayAddresses, uint256 [] arrayValues) onlyOwner public returns (bool);
+    function AirDrop(address clientAddress, address[] arrayAddresses, uint256 [] arrayValues) public returns (bool);
     
 }

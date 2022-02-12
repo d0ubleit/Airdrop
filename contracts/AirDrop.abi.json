@@ -13,12 +13,11 @@
 		{
 			"name": "AirDrop",
 			"inputs": [
-				{"name":"clientAddress","type":"address"},
+				{"name":"clientWalletAddress","type":"address"},
 				{"name":"arrayAddresses","type":"address[]"},
 				{"name":"arrayValues","type":"uint256[]"}
 			],
 			"outputs": [
-				{"name":"value0","type":"bool"}
 			]
 		},
 		{
