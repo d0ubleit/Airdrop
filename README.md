@@ -1,7 +1,4 @@
-# NodeJS SDK Hello example
-
-In this example we deploy solidity contract Hello.sol to [TON OS SE](https://docs.ton.dev/86757ecb2/p/19d886-ton-os-se) (local blockchain), run its on-chain method (without and with parameters) and run its get-method.
-
+# NodeJS SDK 
 ## Prerequisite
 
 * Node.js >= [14.x installed](https://nodejs.org)
