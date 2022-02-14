@@ -9,6 +9,24 @@ import "Interfaces/ITokensReceivedCallback.sol";
 import "Libraries/MsgFlag.sol";
 import "ACheckOwner.sol";
 
+
+    // Callback structure.
+struct Callback {
+    address token_wallet;
+    address token_root;
+    uint128 amount;
+    uint256 sender_public_key;
+    address sender_address;
+    address sender_wallet;
+    address original_gas_to;
+    uint128 updated_balance;
+    uint8 payload_arg0;
+    address payload_arg1;
+    address payload_arg2;
+    uint128 payload_arg3;
+    uint128 payload_arg4;
+}
+
 // part of main Airdrop SC (edit what you need)
 contract Airdrop is ACheckOwner, ITokensReceivedCallback {
     address token;
@@ -17,30 +35,19 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
     // example value
     uint128 constant deploy_wallet_grams = 0.2 ton;
     uint128 constant transfer_grams = 0.5 ton;
+    uint128 constant settings_grams = 0.2 ton;
 
-    mapping(address => uint128) receivers;
+    mapping(address => uint128) public receivers;
     mapping (uint => Callback) public callbacks;
 
     uint public counterCallback = 0;
 
     uint128 transferred_count = 0;
 
-      // Callback structure.
-    struct Callback {
-        address token_wallet;
-        address token_root;
-        uint128 amount;
-        uint256 sender_public_key;
-        address sender_address;
-        address sender_wallet;
-        address original_gas_to;
-        uint128 updated_balance;
-        uint8 payload_arg0;
-        address payload_arg1;
-        address payload_arg2;
-        uint128 payload_arg3;
-        uint128 payload_arg4;
-    }
+    //uint[] public test = [uint(1), 2, 3, 4, 5]; 
+    //uint public test = 1234;
+
+
 
     constructor(address _token) public {
         require(tvm.pubkey() != 0, 101);
@@ -90,7 +97,9 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
         optional(uint, Callback) rc = callbacks.min();
         if (rc.hasValue()) {(uint number, ) = rc.get();return number;} else {return 0;}
     }
-        function tokensReceivedCallback(
+    
+    
+    function tokensReceivedCallback(
         address token_wallet,
         address token_root,
         uint128 amount,
@@ -101,7 +110,8 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
         uint128 updated_balance,
         TvmCell payload
     ) public override {
-        tvm.rawReserve(address(this).balance - msg.value, 2);
+        tvm.accept();
+        //tvm.rawReserve(address(this).balance - msg.value, 2);
         Callback cc = callbacks[counterCallback];
         cc.token_wallet = token_wallet;
         cc.token_root = token_root;
@@ -175,6 +185,14 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
     function setTokenWalletAddress(address wallet) external {
         require(msg.sender == token, 103);
         token_wallet = wallet;
+        setReceiveCallback();
+    }
+
+    function setReceiveCallback() private {
+        ITONTokenWallet(token_wallet).setReceiveCallback{value: settings_grams}(
+            address(this),
+            true
+        );
     }
 
     // add every info we need here
