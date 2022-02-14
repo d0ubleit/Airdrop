@@ -6,7 +6,8 @@
 			"name": "constructor",
 			"inputs": [
 				{"name":"_token","type":"address"},
-				{"name":"_AirDropAddress","type":"address"}
+				{"name":"_AirDropAddress","type":"address"},
+				{"name":"_AirDropWalletAddress","type":"address"}
 			],
 			"outputs": [
 			]

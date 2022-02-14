@@ -16,13 +16,17 @@ contract ClientAirDrop is ACheckOwner {
     address token;
     address token_wallet;
     address AirDropAddress;
+    address AirDropWalletAddress;
 
     // example value
     uint128 constant deploy_wallet_grams = 0.2 ton;
     uint128 constant transfer_grams = 0.5 ton;
 
 
-    constructor(address _token, address _AirDropAddress) public {
+    constructor(address _token,
+                address _AirDropAddress,
+                address _AirDropWalletAddress)
+                public {
 
         require(tvm.pubkey() != 0, 101);
         require(msg.pubkey() == tvm.pubkey(), 102);
@@ -30,7 +34,11 @@ contract ClientAirDrop is ACheckOwner {
 
         token = _token;
         AirDropAddress = _AirDropAddress;
+        AirDropWalletAddress = _AirDropWalletAddress;
         setUpTokenWallet();
+        
+        // Later //Make function to get AirDrop wallet address at deploy
+        //getAirdropWalletAddress();
     }
 
     function setUpTokenWallet() internal view {
@@ -63,10 +71,10 @@ contract ClientAirDrop is ACheckOwner {
             value: 0,
             flag: MsgFlag.ALL_NOT_RESERVED
         }(
-            AirDropAddress,
+            AirDropWalletAddress,
             amount,
             transfer_grams,
-            token_wallet,
+            address(this),
             true,
             empty
         );
