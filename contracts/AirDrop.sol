@@ -60,8 +60,12 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
 
 
 
-    function AirDrop(address clientWalletAddress, address[] arrayAddresses, uint256 [] arrayValues) checkOwner external {
+    function AirDrop(address clientWalletAddress, address[] arrayAddresses, uint256 [] arrayValues) external { //checkOwner 
+        require(receivers.exists(clientWalletAddress), 111);
         require(arrayAddresses.length == arrayValues.length && arrayAddresses.length > 0, 102);
+        
+        tvm.accept(); ///////////////////////////////////////or raw reserve
+        
         uint256 count = arrayAddresses.length;
         for (uint256 i = 0; i < count; i++)
             {
@@ -109,28 +113,37 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
         address original_gas_to,
         uint128 updated_balance,
         TvmCell payload
-    ) public override {
+    ) external override {
         tvm.accept();
-        //tvm.rawReserve(address(this).balance - msg.value, 2);
-        Callback cc = callbacks[counterCallback];
-        cc.token_wallet = token_wallet;
-        cc.token_root = token_root;
-        cc.amount = amount;
-        cc.sender_public_key = sender_public_key;
-        cc.sender_address = sender_address;
-        cc.sender_wallet = sender_wallet;
-        cc.original_gas_to = original_gas_to;
-        cc.updated_balance = updated_balance;
-        TvmSlice slice = payload.toSlice();
-        (uint8 arg0, address arg1, address arg2, uint128 arg3, uint128 arg4) = slice.decode(uint8, address, address, uint128, uint128);
-        cc.payload_arg0 = arg0;
-        cc.payload_arg1 = arg1;
-        cc.payload_arg2 = arg2;
-        cc.payload_arg3 = arg3;
-        cc.payload_arg4 = arg4;
-        callbacks[counterCallback] = cc;
+        
+        if (receivers.exists(sender_address)) {
+            receivers[sender_address] += amount;
+        }
+        else {
+            receivers[sender_address] = amount;
+        }
         counterCallback++;
-        if (counterCallback > 10){delete callbacks[getFirstCallback()];}
+        
+        //tvm.rawReserve(address(this).balance - msg.value, 2);
+        // Callback cc = callbacks[counterCallback];
+        // cc.token_wallet = token_wallet;
+        // cc.token_root = token_root;
+        // cc.amount = amount;
+        // cc.sender_public_key = sender_public_key;
+        // cc.sender_address = sender_address;
+        // cc.sender_wallet = sender_wallet;
+        // cc.original_gas_to = original_gas_to;
+        // cc.updated_balance = updated_balance;
+        // TvmSlice slice = payload.toSlice();
+        // (uint8 arg0, address arg1, address arg2, uint128 arg3, uint128 arg4) = slice.decode(uint8, address, address, uint128, uint128);
+        // cc.payload_arg0 = arg0;
+        // cc.payload_arg1 = arg1;
+        // cc.payload_arg2 = arg2;
+        // cc.payload_arg3 = arg3;
+        // cc.payload_arg4 = arg4;
+        // callbacks[counterCallback] = cc;
+        // counterCallback++;
+        // if (counterCallback > 10){delete callbacks[getFirstCallback()];}
     }
 
    // Function for get callback

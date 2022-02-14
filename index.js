@@ -179,12 +179,23 @@ const ZeroAddress = "0:000000000000000000000000000000000000000000000000000000000
         var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
         console.log(`AirDrop Wallet balance is ${output.value0}\n\n`);
 
-        var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "getDetails", { "_answer_id": 0 });
-        console.log(`AirDrop Wallet balance is ${output.receive_callback}\n\n`);
+        // var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "getDetails", { "_answer_id": 0 });
+        // console.log(`AirDrop Wallet balance is ${output.receive_callback}\n\n`);
 
-        console.log(`Check AirDrop callbacks`);
-        var output = await callGetFunctionNoAccept(AirDropAddress, AirDrop_ABI, "counterCallback");
-        console.log(`AirDrop Wallet balance is ${output.counterCallback}\n\n`);
+        console.log(`Check AirDrop depositors list`);
+        var output = await callGetFunctionNoAccept(AirDropAddress, AirDrop_ABI, "receivers");
+        // console.log(`AirDrop Wallet balance is ${output.receivers}\n\n`);
+
+
+        console.log(`Test AirDrop function`);
+        await callFunctionSigned(ClientAirDropKeys, ClientAirDropAddress, ClientAirDrop_ABI, "doAirDrop", { "arrayAddresses": [DropRcvrAddress], "arrayValues": [2] });
+        console.log(`Check balances:`);
+        var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        console.log(`AirDrop Wallet balance is ${output.value0}\n\n`);
+        var output = await callGetFunctionNoAccept(DropRcvrAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        console.log(`DropRcvr Wallet balance is ${output.value0}\n\n`);
+
+
 
 
 

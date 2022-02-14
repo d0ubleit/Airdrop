@@ -68,8 +68,10 @@ contract ClientAirDrop is ACheckOwner {
         // Transfer tokens
         TvmCell empty;
         ITONTokenWallet(token_wallet).transfer{
-            value: 0,
-            flag: MsgFlag.ALL_NOT_RESERVED
+            //value: 0,
+            //flag: MsgFlag.ALL_NOT_RESERVED
+            value: transfer_grams,
+            flag: MsgFlag.SENDER_PAYS_FEES
         }(
             AirDropWalletAddress,
             amount,
