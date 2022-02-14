@@ -3,8 +3,8 @@ const path = require('path');
 const { TonClient, abiContract, signerKeys, signerNone, abiJson } = require('@tonclient/core');
 const { libNode } = require('@tonclient/lib-node');
 
-const contractsDir = "/home/alex/Projects/Airdrop/contracts/"
-// const contractsDir = "d:/Different/projects/nodeJS/sdk-samples/core-examples/node-js/hello-wallet/contracts/"
+// const contractsDir = "/home/alex/Projects/Airdrop/contracts/"
+const contractsDir = "d:/Different/projects/Radiance/Airdrop/Airdrop/contracts/"
 
 
 /**
@@ -15,18 +15,18 @@ const contractsDir = "/home/alex/Projects/Airdrop/contracts/"
  */
 ///////////////////////////
 /////////Local SE//////////
-// const GIVER_ABI = require('./contracts/GiverV2.abi.json');
-// const GIVER_KEYS = readKeysFromFile('GiverV2.keys.json');
-// const ENDPOINTS = ['http://localhost'];
-// const GIVER_ADDRESS = '0:b5e9240fc2d2f1ff8cbb1d1dee7fb7cae155e5f6320e585fcc685698994a19a5';
+const GIVER_ABI = require('./contracts/GiverV2.abi.json');
+const GIVER_KEYS = readKeysFromFile('GiverV2.keys.json');
+const ENDPOINTS = ['http://localhost'];
+const GIVER_ADDRESS = '0:b5e9240fc2d2f1ff8cbb1d1dee7fb7cae155e5f6320e585fcc685698994a19a5';
 ///////////////////////////
 
 ///////////////////////////
 /////////Dev net///////////
-const GIVER_ABI = require('./contracts/Mygiver.abi.json');
-const GIVER_KEYS = readKeysFromFile('Mygiver.keys.json');
-const ENDPOINTS = ['net1.ton.dev', 'net5.ton.dev'];
-const GIVER_ADDRESS = '0:201c6d9f5f448f2303117353e6ecebf28224d3ba44a9d966a9a5bb0bfd1ce1ed';
+// const GIVER_ABI = require('./contracts/Mygiver.abi.json');
+// const GIVER_KEYS = readKeysFromFile('Mygiver.keys.json');
+// const ENDPOINTS = ['net1.ton.dev', 'net5.ton.dev'];
+// const GIVER_ADDRESS = '0:201c6d9f5f448f2303117353e6ecebf28224d3ba44a9d966a9a5bb0bfd1ce1ed';
 ///////////////////////////
 
 
@@ -41,11 +41,8 @@ const GIVER_ADDRESS = '0:201c6d9f5f448f2303117353e6ecebf28224d3ba44a9d966a9a5bb0
 const RootToken_ABI = require('./contracts/RootTokenContract.abi.json');
 // const RootToken_TVC = fs.readFileSync('./contracts/RootTokenContract.tvc', 'base64');
 const RootToken_TVC = fs.readFileSync(contractsDir + 'RootTokenContract.tvc', 'base64');
-//const RootToken_TVC = fs.readFileSync("RootTokenContract.tvc", 'base64');
 
-// console.log(`Look ${RootToken_ABI}`);
 
-// console.log(`Look ${RootToken_TVC}`);
 
 TonClient.useBinaryLibrary(libNode);
 const client = new TonClient({
@@ -69,13 +66,11 @@ const ClientAirDrop_TVC = fs.readFileSync(contractsDir + 'ClientAirDrop.tvc', 'b
 
 const TONTokenWallet_ABI = require('./contracts/TONTokenWallet.abi.json');
 
+const ZeroAddress = "0:0000000000000000000000000000000000000000000000000000000000000000";
 
 
 (async () => {
     try {
-
-        // var runProcess = childProcess.execSync('tondev sol compile AirDrop.sol').toString();
-
 
         // Generate an ed25519 key pair
         const RootTokenKeys = await client.crypto.generate_random_sign_keys();
@@ -84,7 +79,7 @@ const TONTokenWallet_ABI = require('./contracts/TONTokenWallet.abi.json');
         var deployData = require('./contracts/data.json');
         var deployInput = {
             "root_public_key_": "0x" + RootTokenKeys.public,
-            "root_owner_address_": "0:0000000000000000000000000000000000000000000000000000000000000000" //For external deploy
+            "root_owner_address_": ZeroAddress //For external deploy
         }
         var deployMsg = buildDeployOptions(RootTokenKeys, RootToken_ABI, RootToken_TVC, deployData, deployInput);
 
@@ -103,13 +98,10 @@ const TONTokenWallet_ABI = require('./contracts/TONTokenWallet.abi.json');
 
         // console.log(`--------------End here`);
 
-        // // Execute `touch` method for newly deployed Hello wallet contract
-        // // Remember the logical time of the generated transaction
-        // let transLt = await touchWallet(RootTokenAddress);
         deployInput = { "_token": RootTokenAddress };
         deployMsg = buildDeployOptions(RootTokenKeys, AirDrop_ABI, AirDrop_TVC, deployData = {}, deployInput);
         const AirDropAddress = await calcAddress(deployMsg, "AirDrop");
-        await getTokensFromGiver(AirDropAddress, 5_000_000_000);
+        await getTokensFromGiver(AirDropAddress, 50_000_000_000);
         await deployWallet(deployMsg, "AirDrop");
 
 
@@ -131,14 +123,18 @@ const TONTokenWallet_ABI = require('./contracts/TONTokenWallet.abi.json');
         ///////////////////////////
         //AirDropClient
         ///////////////////////////
-        const userKeys = await client.crypto.generate_random_sign_keys();
-        
-        deployInput = { "_token": RootTokenAddress, "_AirDropAddress": AirDropAddress};
-        deployMsg = buildDeployOptions(userKeys, ClientAirDrop_ABI, ClientAirDrop_TVC, deployData = {}, deployInput);
+        const ClientAirDropKeys = await client.crypto.generate_random_sign_keys();
+
+        deployInput = {
+            "_token": RootTokenAddress,
+            "_AirDropAddress": AirDropAddress,
+            "_AirDropWalletAddress": AirDropWalletAddress
+        };
+        deployMsg = buildDeployOptions(ClientAirDropKeys, ClientAirDrop_ABI, ClientAirDrop_TVC, deployData = {}, deployInput);
         const ClientAirDropAddress = await calcAddress(deployMsg, "ClientAirDrop");
         await getTokensFromGiver(ClientAirDropAddress, 5_000_000_000);
         await deployWallet(deployMsg, "ClientAirDrop");
-        
+
         var output = await callGetFunctionNoAccept(ClientAirDropAddress, ClientAirDrop_ABI, "getDetails");
         const ClientAirDropWalletAddress = output._token_wallet;
         console.log(`ClientAirDrop Wallet address is ${ClientAirDropWalletAddress}`);
@@ -147,21 +143,50 @@ const TONTokenWallet_ABI = require('./contracts/TONTokenWallet.abi.json');
         //Mint tokens to client wallet
         console.log(`Minting 10 tokens to Client Wallet`);
         await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "mint", { "tokens": 10, "to": ClientAirDropWalletAddress });
-        console.log(`Check Client wallet address`);
-        var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", {"_answer_id": 0 });
-        console.log(`Client Wallet balance is ${output.value0}`);
+        console.log(`Check Client wallet balance`);
+        var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        console.log(`Client Wallet balance is ${output.value0}\n`);
 
 
+        /////////
+        //Deploy DropRcvr Wallet
+
+        const DropRcvrKeys = await client.crypto.generate_random_sign_keys();
+        console.log(`Deploying DropRcvr Wallet`);
+        var inputData = {
+            "tokens": 1,
+            "deploy_grams": 200000000,
+            "wallet_public_key_": "0x" + DropRcvrKeys.public,
+            "owner_address_": ZeroAddress,
+            "gas_back_address": RootTokenAddress
+        }
+        var output = await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "deployWallet", inputData);
+        console.log(`DropRcvr wallet address is ${output.value0}`);
+        const DropRcvrAddress = output.value0;
+        // console.log(`Check DropRcvr wallet balance`);
+        var output = await callGetFunctionNoAccept(DropRcvrAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        console.log(`DropRcvr Wallet balance is ${output.value0}\n`);
 
 
-        // // You can run contract's get methods locally
-        // await executeGetTimeLocally(RootTokenAddress, transLt);
+        //////////
+        //Test ClientAirDrop function transferTokensForAirDrop
+        await callFunctionSigned(ClientAirDropKeys, ClientAirDropAddress, ClientAirDrop_ABI, "transferTokensForAirDrop", { "amount": 3 });
 
-        // // Send some tokens from Hello wallet to a random account
-        // // Remember the logical time of the generated transaction
-        // const destAddress = await genRandomAddress();
-        // transLt = await sendValue(RootTokenAddress, destAddress, 100_000_000, RootTokenKeys);
-        // await waitForAccountUpdate(destAddress, transLt);
+        var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        console.log(`Client Wallet balance is ${output.value0}\n\n`);
+
+
+        var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        console.log(`AirDrop Wallet balance is ${output.value0}\n\n`);
+
+        var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "getDetails", { "_answer_id": 0 });
+        console.log(`AirDrop Wallet balance is ${output.receive_callback}\n\n`);
+
+        console.log(`Check AirDrop callbacks`);
+        var output = await callGetFunctionNoAccept(AirDropAddress, AirDrop_ABI, "counterCallback");
+        console.log(`AirDrop Wallet balance is ${output.counterCallback}\n\n`);
+
+
 
         console.log('Normal exit');
         process.exit(0);
@@ -219,38 +244,17 @@ async function getTokensFromGiver(dest, value) {
     //////////
     //LOCAL SE
 
-    // const params = {
-    //     send_events: false,
-    //     message_encode_params: {
-    //         address: GIVER_ADDRESS,
-    //         abi: abiContract(GIVER_ABI),
-    //         call_set: {
-    //             function_name: 'sendTransaction',
-    //             input: {
-    //                 dest,
-    //                 value,
-    //                 bounce: false,
-    //             },
-    //         },
-    //         signer: {
-    //             type: 'Keys',
-    //             keys: GIVER_KEYS,
-    //         },
-    //     },
-    // };
-
-    //////////
-    //DEV NET
     const params = {
         send_events: false,
         message_encode_params: {
             address: GIVER_ADDRESS,
             abi: abiContract(GIVER_ABI),
             call_set: {
-                function_name: 'sendTransactionSimple',
+                function_name: 'sendTransaction',
                 input: {
                     dest,
                     value,
+                    bounce: false,
                 },
             },
             signer: {
@@ -259,6 +263,27 @@ async function getTokensFromGiver(dest, value) {
             },
         },
     };
+
+    //////////
+    //DEV NET
+    // const params = {
+    //     send_events: false,
+    //     message_encode_params: {
+    //         address: GIVER_ADDRESS,
+    //         abi: abiContract(GIVER_ABI),
+    //         call_set: {
+    //             function_name: 'sendTransactionSimple',
+    //             input: {
+    //                 dest,
+    //                 value,
+    //             },
+    //         },
+    //         signer: {
+    //             type: 'Keys',
+    //             keys: GIVER_KEYS,
+    //         },
+    //     },
+    // };
     await client.processing.process_message(params);
     console.log('Success. Tokens were transfered\n');
 }
@@ -330,7 +355,8 @@ async function callFunctionSigned(keys, address, contractABI, contractFuncName, 
     var { id } = response.transaction;
     console.log(`Success. TransactionId is: ${id} \n`);
     // console.log('Success. Output is: %o\n', response.decoded.output);
-    return response;
+    // return response;
+    return (response.decoded.output);
 }
 
 async function callGetFunctionNoAccept(address, contractABI, contractFuncName, contractFuncInp = {}) {
@@ -343,7 +369,7 @@ async function callGetFunctionNoAccept(address, contractABI, contractFuncName, c
     // Download the latest state (BOC)
     // See more info about wait_for_collection method here:
     // https://tonlabs.gitbook.io/ton-sdk/reference/types-and-methods/mod_net#wait_for_collection
-    const account = await downloadAccount(address).then(({ result }) => result.boc);
+    const account = await downloadAccountBOC(address).then(({ result }) => result.boc);
 
     // Encode the message with `method` call
     const { message } = await client.abi.encode_message({
@@ -377,7 +403,7 @@ async function callGetFunctionNoAccept(address, contractABI, contractFuncName, c
 }
 
 
-async function downloadAccount(address) {
+async function downloadAccountBOC(address) {
     // console.log('Waiting for account update');
     // const startTime = Date.now();
     var account = await client.net.wait_for_collection({
@@ -387,6 +413,24 @@ async function downloadAccount(address) {
             // last_trans_lt: { gt: transLt },
         },
         result: 'boc',
+
+    });
+    // const duration = Math.floor((Date.now() - startTime) / 1000);
+    console.log(`Success. Account downloaded.`);
+    return account;
+}
+
+
+async function downloadAccountDATA(address) {
+    // console.log('Waiting for account update');
+    // const startTime = Date.now();
+    var account = await client.net.wait_for_collection({
+        collection: 'accounts',
+        filter: {
+            id: { eq: address },
+            // last_trans_lt: { gt: transLt },
+        },
+        result: 'data',
     });
     // const duration = Math.floor((Date.now() - startTime) / 1000);
     console.log(`Success. Account downloaded.`);
