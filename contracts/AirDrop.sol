@@ -36,8 +36,9 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
     uint128 constant deploy_wallet_grams = 0.2 ton;
     uint128 constant transfer_grams = 0.5 ton;
     uint128 constant settings_grams = 0.2 ton;
+    uint128 constant fees = 1 ton;
 
-    mapping(address => uint128) public receivers;
+    mapping(address => uint128) public depositors;
     mapping (uint => Callback) public callbacks;
 
     uint public counterCallback = 0;
@@ -60,11 +61,14 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
 
 
 
-    function AirDrop(address clientWalletAddress, address[] arrayAddresses, uint256 [] arrayValues) external { //checkOwner 
-        require(receivers.exists(clientWalletAddress), 111);
-        require(arrayAddresses.length == arrayValues.length && arrayAddresses.length > 0, 102);
+    function AirDrop(address clientAirDropAddress, address[] arrayAddresses, uint256 [] arrayValues) external { //checkOwner 
+        // tvm.accept();
         
-        tvm.accept(); ///////////////////////////////////////or raw reserve
+        require(msg.value >= (arrayAddresses.length * transfer_grams) + fees, 112);
+        require(depositors.exists(clientAirDropAddress), 111);
+        require(arrayAddresses.length == arrayValues.length && arrayAddresses.length > 0, 102);
+        tvm.rawReserve(address(this).balance - msg.value, 0);
+         ///////////////////////////////////////or raw reserve
         
         uint256 count = arrayAddresses.length;
         for (uint256 i = 0; i < count; i++)
@@ -72,13 +76,13 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
         // calling transfer function from contract //
             TvmCell empty;
             ITONTokenWallet(token_wallet).transfer{
-                value: 0,
-                flag: MsgFlag.ALL_NOT_RESERVED
+                value: transfer_grams,
+                flag: 0
             }(
-                arrayAddresses [i],
-                uint128(arrayValues [i]),
+                arrayAddresses[i],
+                uint128(arrayValues[i]),
                 transfer_grams,
-                clientWalletAddress,
+                clientAirDropAddress,
                 false,
                 empty
             );
@@ -90,7 +94,7 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
     /*function checkAirDrop (address clientAddress, uint256 value, address [] arrayAddresses, uint256 [] arrayValues) OnlyOwner public {
         require(arrayAddresses.length = arrayValues.length && arrayAddresses > 0, 102);
         for (uint i = 0; i < arrayAddresses.length; i++) {
-            receivers[arrayAddresses[i]] = arrayValues [i];
+            depositors[arrayAddresses[i]] = arrayValues [i];
             uint sum += arrayValues [i];
         }
         require(sum > value, 103);
@@ -116,11 +120,11 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
     ) external override {
         tvm.accept();
         
-        if (receivers.exists(sender_address)) {
-            receivers[sender_address] += amount;
+        if (depositors.exists(sender_address)) {
+            depositors[sender_address] += amount;
         }
         else {
-            receivers[sender_address] = amount;
+            depositors[sender_address] = amount;
         }
         counterCallback++;
         
@@ -230,7 +234,7 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
         
         
         
-        require(receivers.exists(msg.sender) && amount <= receivers[msg.sender], 104);
+        require(depositors.exists(msg.sender) && amount <= depositors[msg.sender], 104);
         
         tvm.rawReserve(address(this).balance - msg.value, 2);
         require(msg.value >= tokensBack_required_value, 105);

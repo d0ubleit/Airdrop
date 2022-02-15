@@ -13,7 +13,7 @@
 		{
 			"name": "AirDrop",
 			"inputs": [
-				{"name":"clientWalletAddress","type":"address"},
+				{"name":"clientAirDropAddress","type":"address"},
 				{"name":"arrayAddresses","type":"address[]"},
 				{"name":"arrayValues","type":"uint256[]"}
 			],
@@ -86,11 +86,11 @@
 			]
 		},
 		{
-			"name": "receivers",
+			"name": "depositors",
 			"inputs": [
 			],
 			"outputs": [
-				{"name":"receivers","type":"map(address,uint128)"}
+				{"name":"depositors","type":"map(address,uint128)"}
 			]
 		},
 		{

@@ -42,6 +42,12 @@ const RootToken_ABI = require('./contracts/RootTokenContract.abi.json');
 // const RootToken_TVC = fs.readFileSync('./contracts/RootTokenContract.tvc', 'base64');
 const RootToken_TVC = fs.readFileSync(contractsDir + 'RootTokenContract.tvc', 'base64');
 
+////////////////Number of AirDrop Recievers
+const RcvrsNum = 100;
+////////////////Tokens mint to client wallet
+const tokensMintNum = 1000000;
+////////////////Tokens send for AirDrop (must be less than tokensMintNum)
+const tokensToAirDrop = 1000000;
 
 
 TonClient.useBinaryLibrary(libNode);
@@ -67,11 +73,12 @@ const ClientAirDrop_TVC = fs.readFileSync(contractsDir + 'ClientAirDrop.tvc', 'b
 const TONTokenWallet_ABI = require('./contracts/TONTokenWallet.abi.json');
 
 const ZeroAddress = "0:0000000000000000000000000000000000000000000000000000000000000000";
-
+const sep = "----------------------------------------------------------------";
 
 (async () => {
     try {
-
+        console.log(`${sep}`);
+        console.log(`${sep}`);
         // Generate an ed25519 key pair
         const RootTokenKeys = await client.crypto.generate_random_sign_keys();
 
@@ -88,7 +95,7 @@ const ZeroAddress = "0:000000000000000000000000000000000000000000000000000000000
         const RootTokenAddress = await calcAddress(deployMsg, "RootTokenContract");
 
         // Send some tokens to `RootTokenAddress` before deploy
-        await getTokensFromGiver(RootTokenAddress, 2_000_000_000);
+        await getTokensFromGiver(RootTokenAddress, 1000_000_000_000);
 
         //Deploy RootTokenWallet
         await deployWallet(deployMsg, "RootTokenContract");
@@ -101,7 +108,7 @@ const ZeroAddress = "0:000000000000000000000000000000000000000000000000000000000
         deployInput = { "_token": RootTokenAddress };
         deployMsg = buildDeployOptions(RootTokenKeys, AirDrop_ABI, AirDrop_TVC, deployData = {}, deployInput);
         const AirDropAddress = await calcAddress(deployMsg, "AirDrop");
-        await getTokensFromGiver(AirDropAddress, 50_000_000_000);
+        await getTokensFromGiver(AirDropAddress, 5_000_000_000);
         await deployWallet(deployMsg, "AirDrop");
 
 
@@ -109,7 +116,7 @@ const ZeroAddress = "0:000000000000000000000000000000000000000000000000000000000
         var output = await callGetFunctionNoAccept(AirDropAddress, AirDrop_ABI, "getDetails");
 
         const AirDropWalletAddress = output._token_wallet;
-        console.log(`AirDrop Wallet address is ${AirDropWalletAddress}`);
+        console.log(`AirDrop Wallet address is ${AirDropWalletAddress}\n`);
         // await callGetFunctionWithAccept(AirDropAddress, AirDrop_ABI, "getDetails")
 
 
@@ -132,7 +139,7 @@ const ZeroAddress = "0:000000000000000000000000000000000000000000000000000000000
         };
         deployMsg = buildDeployOptions(ClientAirDropKeys, ClientAirDrop_ABI, ClientAirDrop_TVC, deployData = {}, deployInput);
         const ClientAirDropAddress = await calcAddress(deployMsg, "ClientAirDrop");
-        await getTokensFromGiver(ClientAirDropAddress, 5_000_000_000);
+        await getTokensFromGiver(ClientAirDropAddress, 1000_000_000_000);
         await deployWallet(deployMsg, "ClientAirDrop");
 
         var output = await callGetFunctionNoAccept(ClientAirDropAddress, ClientAirDrop_ABI, "getDetails");
@@ -141,59 +148,95 @@ const ZeroAddress = "0:000000000000000000000000000000000000000000000000000000000
 
         /////////
         //Mint tokens to client wallet
-        console.log(`Minting 10 tokens to Client Wallet`);
-        await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "mint", { "tokens": 10, "to": ClientAirDropWalletAddress });
+        console.log(`Minting 100 tokens to Client Wallet`);
+        await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "mint", { "tokens": tokensMintNum, "to": ClientAirDropWalletAddress });
         console.log(`Check Client wallet balance`);
         var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
         console.log(`Client Wallet balance is ${output.value0}\n`);
 
 
         /////////
-        //Deploy DropRcvr Wallet
-
-        const DropRcvrKeys = await client.crypto.generate_random_sign_keys();
-        console.log(`Deploying DropRcvr Wallet`);
+        //Deploy DropRcvr Wallet with 1 token
+        var DropRcvrKeys = [];
+        var DropRcvrAddress = [];
+        DropRcvrKeys.push(await client.crypto.generate_random_sign_keys());
+        console.log(`Deploying DropRcvr0 Wallet`);
         var inputData = {
             "tokens": 1,
             "deploy_grams": 200000000,
-            "wallet_public_key_": "0x" + DropRcvrKeys.public,
+            "wallet_public_key_": "0x" + DropRcvrKeys[0].public,
             "owner_address_": ZeroAddress,
             "gas_back_address": RootTokenAddress
         }
         var output = await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "deployWallet", inputData);
-        console.log(`DropRcvr wallet address is ${output.value0}`);
-        const DropRcvrAddress = output.value0;
+        console.log(`DropRcvr0 wallet address is ${output.value0}`);
+        DropRcvrAddress.push(output.value0);
         // console.log(`Check DropRcvr wallet balance`);
-        var output = await callGetFunctionNoAccept(DropRcvrAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-        console.log(`DropRcvr Wallet balance is ${output.value0}\n`);
+        var output = await callGetFunctionNoAccept(DropRcvrAddress[0], TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        console.log(`DropRcvr0 Wallet balance is ${output.value0}\n`);
+
+        /////////
+        //Deploy more DropRcvr Wallets 
+
+        for (let i = 1; i < RcvrsNum; i++) { //i = 1 because we already have 1 Rcvr
+            DropRcvrKeys.push(await client.crypto.generate_random_sign_keys());
+            //console.log(`Deploying DropRcvr${i} Wallet`);
+            var inputData = {
+                "tokens": i + 1,
+                "deploy_grams": 200000000,
+                "wallet_public_key_": "0x" + DropRcvrKeys[i].public,
+                "owner_address_": ZeroAddress,
+                "gas_back_address": RootTokenAddress
+            }
+            var output = await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "deployWallet", inputData);
+            console.log(`DropRcvr${i} wallet address is ${output.value0}`);
+            DropRcvrAddress.push(output.value0);
+            // console.log(`Check DropRcvr wallet balance`);
+            // var output = await callGetFunctionNoAccept(DropRcvrAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+            // console.log(`DropRcvr Wallet balance is ${output.value0}\n`);
+
+        }
+
 
 
         //////////
         //Test ClientAirDrop function transferTokensForAirDrop
-        await callFunctionSigned(ClientAirDropKeys, ClientAirDropAddress, ClientAirDrop_ABI, "transferTokensForAirDrop", { "amount": 3 });
+        await callFunctionSigned(ClientAirDropKeys, ClientAirDropAddress, ClientAirDrop_ABI, "transferTokensForAirDrop", { "amount": tokensToAirDrop });
 
         var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-        console.log(`Client Wallet balance is ${output.value0}\n\n`);
+        console.log(`Client Wallet balance is ${output.value0}`);
 
 
         var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-        console.log(`AirDrop Wallet balance is ${output.value0}\n\n`);
+        console.log(`AirDrop Wallet balance is ${output.value0}\n`);
 
         // var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "getDetails", { "_answer_id": 0 });
         // console.log(`AirDrop Wallet balance is ${output.receive_callback}\n\n`);
 
         console.log(`Check AirDrop depositors list`);
-        var output = await callGetFunctionNoAccept(AirDropAddress, AirDrop_ABI, "receivers");
-        // console.log(`AirDrop Wallet balance is ${output.receivers}\n\n`);
+        var output = await callGetFunctionNoAccept(AirDropAddress, AirDrop_ABI, "depositors", contractFuncInp = {}, true);
+        // console.log(`AirDrop Wallet balance is ${output.depositors}\n\n`);
 
 
-        console.log(`Test AirDrop function`);
-        await callFunctionSigned(ClientAirDropKeys, ClientAirDropAddress, ClientAirDrop_ABI, "doAirDrop", { "arrayAddresses": [DropRcvrAddress], "arrayValues": [2] });
+        var RcvrsAmounts = [];
+        for (let i = 0; i < RcvrsNum; i++) {
+            RcvrsAmounts.push(i + 1);
+        }
+
+        console.log(`Test AirDrop function at CLIENTAIRDROP contract`);
+        await callFunctionSigned(ClientAirDropKeys, ClientAirDropAddress, ClientAirDrop_ABI, "doAirDrop", { "arrayAddresses": DropRcvrAddress, "arrayValues": RcvrsAmounts });
+
+        // console.log(`Test AirDrop function at AIRDROP contract`);
+        // await callFunctionSigned(RootTokenKeys, AirDropAddress, AirDrop_ABI, "AirDrop", { "clientAirDropAddress": ClientAirDropAddress, "arrayAddresses": DropRcvrAddress, "arrayValues": RcvrsAmounts });
+
+
         console.log(`Check balances:`);
         var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-        console.log(`AirDrop Wallet balance is ${output.value0}\n\n`);
-        var output = await callGetFunctionNoAccept(DropRcvrAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-        console.log(`DropRcvr Wallet balance is ${output.value0}\n\n`);
+        console.log(`AirDrop Wallet balance is ${output.value0}`);
+        for (let i = 0; i < RcvrsNum; i++) {
+            var output = await callGetFunctionNoAccept(DropRcvrAddress[i], TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+            console.log(`DropRcvr${i} Wallet balance is ${output.value0}`);
+        }
 
 
 
@@ -370,8 +413,8 @@ async function callFunctionSigned(keys, address, contractABI, contractFuncName, 
     return (response.decoded.output);
 }
 
-async function callGetFunctionNoAccept(address, contractABI, contractFuncName, contractFuncInp = {}) {
-    // Execute the get method `getTimestamp` on the latest account's state
+async function callGetFunctionNoAccept(address, contractABI, contractFuncName, contractFuncInp = {}, showInfo = false) {
+    // Execute getter on the latest account's state
     // This can be managed in 3 steps:
     // 1. Download the latest Account State (BOC) 
     // 2. Encode message
@@ -380,11 +423,10 @@ async function callGetFunctionNoAccept(address, contractABI, contractFuncName, c
     // Download the latest state (BOC)
     // See more info about wait_for_collection method here:
     // https://tonlabs.gitbook.io/ton-sdk/reference/types-and-methods/mod_net#wait_for_collection
-    const account = await downloadAccountBOC(address).then(({ result }) => result.boc);
+    const account = await downloadAccountBOC(address, showInfo).then(({ result }) => result.boc);
 
     // Encode the message with `method` call
     const { message } = await client.abi.encode_message({
-
         abi: {
             type: 'Contract',
             value: contractABI,
@@ -400,7 +442,7 @@ async function callGetFunctionNoAccept(address, contractABI, contractFuncName, c
     // Execute `function` get method  (execute the message locally on TVM)
     // See more info about run_tvm method here:
     // https://github.com/tonlabs/TON-SDK/blob/master/docs/mod_tvm.md#run_tvm
-    console.log(`Run ${contractFuncName} function locally`);
+    showInfo ? console.log(`Run ${contractFuncName} function locally`) : showInfo;
     const response = await client.tvm.run_tvm({
         message,
         account,
@@ -409,12 +451,12 @@ async function callGetFunctionNoAccept(address, contractABI, contractFuncName, c
             value: contractABI,
         },
     });
-    console.log('Success. Output is: %o\n', response.decoded.output);
+    showInfo ? console.log('Success. Output is: %o\n', response.decoded.output) : showInfo;
     return (response.decoded.output)
 }
 
 
-async function downloadAccountBOC(address) {
+async function downloadAccountBOC(address, showInfo = false) {
     // console.log('Waiting for account update');
     // const startTime = Date.now();
     var account = await client.net.wait_for_collection({
@@ -427,7 +469,7 @@ async function downloadAccountBOC(address) {
 
     });
     // const duration = Math.floor((Date.now() - startTime) / 1000);
-    console.log(`Success. Account downloaded.`);
+    showInfo ? console.log(`Success. Account downloaded.`) : showInfo;
     return account;
 }
 

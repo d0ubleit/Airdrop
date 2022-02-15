@@ -21,7 +21,8 @@ contract ClientAirDrop is ACheckOwner {
     // example value
     uint128 constant deploy_wallet_grams = 0.2 ton;
     uint128 constant transfer_grams = 0.5 ton;
-
+    uint128 constant settings_grams = 0.2 ton;
+    uint128 constant fees = 1 ton;
 
     constructor(address _token,
                 address _AirDropAddress,
@@ -91,7 +92,12 @@ contract ClientAirDrop is ACheckOwner {
    
 
     function doAirDrop(address[] arrayAddresses, uint256[] arrayValues) public view checkOwnerAndAccept {
-        IAirDrop(AirDropAddress).AirDrop(token_wallet, arrayAddresses, arrayValues);
+        tvm.accept();
+        uint val = (arrayAddresses.length * transfer_grams) + fees*2;
+        IAirDrop(AirDropAddress).AirDrop{
+                value: uint128(val),
+                flag: 0
+            }(address(this), arrayAddresses, arrayValues);
     }
 
 
