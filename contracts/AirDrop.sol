@@ -34,9 +34,10 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
 
     // example value
     uint128 constant deploy_wallet_grams = 0.2 ton;
-    uint128 constant transfer_grams = 0.5 ton;
+    uint128 constant transfer_grams = 0.1 ton;
     uint128 constant settings_grams = 0.2 ton;
-    uint128 constant fees = 1 ton;
+    uint128 constant iteration_cost = 0.005 ton;
+    uint128 constant comission = 0.2 ton;
 
     mapping(address => uint128) public depositors;
     mapping (uint => Callback) public callbacks;
@@ -64,10 +65,10 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
     function AirDrop(address clientAirDropAddress, address[] arrayAddresses, uint256 [] arrayValues) external { //checkOwner 
         // tvm.accept();
         
-        require(msg.value >= (arrayAddresses.length * transfer_grams) + fees, 112);
+        require(msg.value >= (arrayAddresses.length * (transfer_grams + iteration_cost)) + comission, 112);
         require(depositors.exists(clientAirDropAddress), 111);
         require(arrayAddresses.length == arrayValues.length && arrayAddresses.length > 0, 102);
-        tvm.rawReserve(address(this).balance - msg.value, 0);
+        tvm.rawReserve(address(this).balance - (msg.value - comission), 0);
          ///////////////////////////////////////or raw reserve
         
         uint256 count = arrayAddresses.length;
