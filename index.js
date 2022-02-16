@@ -15,18 +15,22 @@ const contractsDir = "d:/Different/projects/Radiance/Airdrop/Airdrop/contracts/"
  */
 ///////////////////////////
 /////////Local SE//////////
-const GIVER_ABI = require('./contracts/GiverV2.abi.json');
-const GIVER_KEYS = readKeysFromFile('GiverV2.keys.json');
-const ENDPOINTS = ['http://localhost'];
-const GIVER_ADDRESS = '0:b5e9240fc2d2f1ff8cbb1d1dee7fb7cae155e5f6320e585fcc685698994a19a5';
+// const GIVER_ABI = require('./contracts/GiverV2.abi.json');
+// const GIVER_KEYS = readKeysFromFile('GiverV2.keys.json');
+// const ENDPOINTS = ['http://localhost'];
+// const GIVER_ADDRESS = '0:b5e9240fc2d2f1ff8cbb1d1dee7fb7cae155e5f6320e585fcc685698994a19a5';
 ///////////////////////////
 
 ///////////////////////////
 /////////Dev net///////////
-// const GIVER_ABI = require('./contracts/Mygiver.abi.json');
-// const GIVER_KEYS = readKeysFromFile('Mygiver.keys.json');
-// const ENDPOINTS = ['net1.ton.dev', 'net5.ton.dev'];
-// const GIVER_ADDRESS = '0:201c6d9f5f448f2303117353e6ecebf28224d3ba44a9d966a9a5bb0bfd1ce1ed';
+const GIVER_ABI = require('./contracts/Mygiver.abi.json');
+const GIVER_KEYS = readKeysFromFile('Mygiver.keys.json');
+const ENDPOINTS = [
+    'eri01.net.everos.dev',
+    'rbx01.net.everos.dev',
+    'gra01.net.everos.dev'];
+//['net1.ton.dev', 'net5.ton.dev'];
+const GIVER_ADDRESS = '0:201c6d9f5f448f2303117353e6ecebf28224d3ba44a9d966a9a5bb0bfd1ce1ed';
 ///////////////////////////
 
 
@@ -42,8 +46,12 @@ const RootToken_ABI = require('./contracts/RootTokenContract.abi.json');
 // const RootToken_TVC = fs.readFileSync('./contracts/RootTokenContract.tvc', 'base64');
 const RootToken_TVC = fs.readFileSync(contractsDir + 'RootTokenContract.tvc', 'base64');
 
+////////////////Get from giver
+const giverRootAmount = 6_000_000_000;
+const giverAirDropAmount = 3_000_000_000;
+const giverClientAmount = 4_000_000_000;
 ////////////////Number of AirDrop Recievers
-const RcvrsNum = 100;
+const RcvrsNum = 10;
 ////////////////Tokens mint to client wallet
 const tokensMintNum = 1000000;
 ////////////////Tokens send for AirDrop (must be less than tokensMintNum)
@@ -95,7 +103,7 @@ const sep = "----------------------------------------------------------------";
         const RootTokenAddress = await calcAddress(deployMsg, "RootTokenContract");
 
         // Send some tokens to `RootTokenAddress` before deploy
-        await getTokensFromGiver(RootTokenAddress, 1000_000_000_000);
+        await getTokensFromGiver(RootTokenAddress, giverRootAmount);
 
         //Deploy RootTokenWallet
         await deployWallet(deployMsg, "RootTokenContract");
@@ -108,7 +116,7 @@ const sep = "----------------------------------------------------------------";
         deployInput = { "_token": RootTokenAddress };
         deployMsg = buildDeployOptions(RootTokenKeys, AirDrop_ABI, AirDrop_TVC, deployData = {}, deployInput);
         const AirDropAddress = await calcAddress(deployMsg, "AirDrop");
-        await getTokensFromGiver(AirDropAddress, 5_000_000_000);
+        await getTokensFromGiver(AirDropAddress, giverAirDropAmount);
         await deployWallet(deployMsg, "AirDrop");
 
 
@@ -139,7 +147,7 @@ const sep = "----------------------------------------------------------------";
         };
         deployMsg = buildDeployOptions(ClientAirDropKeys, ClientAirDrop_ABI, ClientAirDrop_TVC, deployData = {}, deployInput);
         const ClientAirDropAddress = await calcAddress(deployMsg, "ClientAirDrop");
-        await getTokensFromGiver(ClientAirDropAddress, 1000_000_000_000);
+        await getTokensFromGiver(ClientAirDropAddress, giverClientAmount);
         await deployWallet(deployMsg, "ClientAirDrop");
 
         var output = await callGetFunctionNoAccept(ClientAirDropAddress, ClientAirDrop_ABI, "getDetails");
@@ -240,6 +248,21 @@ const sep = "----------------------------------------------------------------";
 
 
 
+        /////Test
+        while (true) {
+            await sleep(10000)
+            console.log(`Check balances:`);
+            var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+            console.log(`AirDrop Wallet balance is ${output.value0}`);
+            for (let i = 0; i < RcvrsNum; i++) {
+                var output = await callGetFunctionNoAccept(DropRcvrAddress[i], TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+                console.log(`DropRcvr${i} Wallet balance is ${output.value0}`);
+            }
+
+        }
+
+
+
 
 
         console.log('Normal exit');
@@ -298,38 +321,17 @@ async function getTokensFromGiver(dest, value) {
     //////////
     //LOCAL SE
 
-    const params = {
-        send_events: false,
-        message_encode_params: {
-            address: GIVER_ADDRESS,
-            abi: abiContract(GIVER_ABI),
-            call_set: {
-                function_name: 'sendTransaction',
-                input: {
-                    dest,
-                    value,
-                    bounce: false,
-                },
-            },
-            signer: {
-                type: 'Keys',
-                keys: GIVER_KEYS,
-            },
-        },
-    };
-
-    //////////
-    //DEV NET
     // const params = {
     //     send_events: false,
     //     message_encode_params: {
     //         address: GIVER_ADDRESS,
     //         abi: abiContract(GIVER_ABI),
     //         call_set: {
-    //             function_name: 'sendTransactionSimple',
+    //             function_name: 'sendTransaction',
     //             input: {
     //                 dest,
     //                 value,
+    //                 bounce: false,
     //             },
     //         },
     //         signer: {
@@ -338,6 +340,27 @@ async function getTokensFromGiver(dest, value) {
     //         },
     //     },
     // };
+
+    //////////
+    //DEV NET
+    const params = {
+        send_events: false,
+        message_encode_params: {
+            address: GIVER_ADDRESS,
+            abi: abiContract(GIVER_ABI),
+            call_set: {
+                function_name: 'sendTransactionSimple',
+                input: {
+                    dest,
+                    value,
+                },
+            },
+            signer: {
+                type: 'Keys',
+                keys: GIVER_KEYS,
+            },
+        },
+    };
     await client.processing.process_message(params);
     console.log('Success. Tokens were transfered\n');
 }
@@ -601,4 +624,10 @@ function readKeysFromFile(fname) {
 async function genRandomAddress() {
     const { bytes } = await client.crypto.generate_random_bytes({ length: 32 });
     return `0:${Buffer.from(bytes, 'base64').toString('hex')}`;
+}
+
+function sleep(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
 }
