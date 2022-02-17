@@ -3,8 +3,8 @@ const path = require('path');
 const { TonClient, abiContract, signerKeys, signerNone, abiJson } = require('@tonclient/core');
 const { libNode } = require('@tonclient/lib-node');
 
-// const contractsDir = "/home/alex/Projects/Airdrop/contracts/"
-const contractsDir = "d:/Different/projects/Radiance/Airdrop/Airdrop/contracts/"
+const contractsDir = "/home/alex/Projects/Airdrop/contracts/"
+// const contractsDir = "d:/Different/projects/Radiance/Airdrop/Airdrop/contracts/"
 
 
 /**
@@ -15,22 +15,22 @@ const contractsDir = "d:/Different/projects/Radiance/Airdrop/Airdrop/contracts/"
  */
 ///////////////////////////
 /////////Local SE//////////
-// const GIVER_ABI = require('./contracts/GiverV2.abi.json');
-// const GIVER_KEYS = readKeysFromFile('GiverV2.keys.json');
-// const ENDPOINTS = ['http://localhost'];
-// const GIVER_ADDRESS = '0:b5e9240fc2d2f1ff8cbb1d1dee7fb7cae155e5f6320e585fcc685698994a19a5';
+const GIVER_ABI = require('./contracts/GiverV2.abi.json');
+const GIVER_KEYS = readKeysFromFile('GiverV2.keys.json');
+const ENDPOINTS = ['http://localhost'];
+const GIVER_ADDRESS = '0:b5e9240fc2d2f1ff8cbb1d1dee7fb7cae155e5f6320e585fcc685698994a19a5';
 ///////////////////////////
 
 ///////////////////////////
 /////////Dev net///////////
-const GIVER_ABI = require('./contracts/Mygiver.abi.json');
-const GIVER_KEYS = readKeysFromFile('Mygiver.keys.json');
-const ENDPOINTS = [
-    'eri01.net.everos.dev',
-    'rbx01.net.everos.dev',
-    'gra01.net.everos.dev'];
-//['net1.ton.dev', 'net5.ton.dev'];
-const GIVER_ADDRESS = '0:201c6d9f5f448f2303117353e6ecebf28224d3ba44a9d966a9a5bb0bfd1ce1ed';
+// const GIVER_ABI = require('./contracts/Mygiver.abi.json');
+// const GIVER_KEYS = readKeysFromFile('Mygiver.keys.json');
+// const ENDPOINTS = [
+//     'eri01.net.everos.dev',
+//     'rbx01.net.everos.dev',
+//     'gra01.net.everos.dev'];
+// //['net1.ton.dev', 'net5.ton.dev'];
+// const GIVER_ADDRESS = '0:201c6d9f5f448f2303117353e6ecebf28224d3ba44a9d966a9a5bb0bfd1ce1ed';
 ///////////////////////////
 
 
@@ -156,7 +156,7 @@ const sep = "----------------------------------------------------------------";
 
         /////////
         //Mint tokens to client wallet
-        console.log(`Minting 100 tokens to Client Wallet`);
+        console.log(`Minting ${tokensMintNum} tokens to Client Wallet`);
         await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "mint", { "tokens": tokensMintNum, "to": ClientAirDropWalletAddress });
         console.log(`Check Client wallet balance`);
         var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
@@ -237,6 +237,8 @@ const sep = "----------------------------------------------------------------";
         // console.log(`Test AirDrop function at AIRDROP contract`);
         // await callFunctionSigned(RootTokenKeys, AirDropAddress, AirDrop_ABI, "AirDrop", { "clientAirDropAddress": ClientAirDropAddress, "arrayAddresses": DropRcvrAddress, "arrayValues": RcvrsAmounts });
 
+        console.log(`Wait 10 seconds\n`);
+        await sleep(10000)
 
         console.log(`Check balances:`);
         var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
@@ -246,20 +248,29 @@ const sep = "----------------------------------------------------------------";
             console.log(`DropRcvr${i} Wallet balance is ${output.value0}`);
         }
 
+        
+        var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        console.log(`ClientAirDrop Wallet balance is ${output.value0}`);
+        console.log(`Get some tokens back`);
+        await callFunctionSigned(ClientAirDropKeys, ClientAirDropAddress, ClientAirDrop_ABI, "requireTokensBack", { "amount": 100});
+        await sleep(100)
+        var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        console.log(`ClientAirDrop Wallet balance is ${output.value0}`);
+
 
 
         /////Test
-        while (true) {
-            await sleep(10000)
-            console.log(`Check balances:`);
-            var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-            console.log(`AirDrop Wallet balance is ${output.value0}`);
-            for (let i = 0; i < RcvrsNum; i++) {
-                var output = await callGetFunctionNoAccept(DropRcvrAddress[i], TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-                console.log(`DropRcvr${i} Wallet balance is ${output.value0}`);
-            }
+        // while (true) {
+        //     await sleep(10000)
+        //     console.log(`Check balances:`);
+        //     var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        //     console.log(`AirDrop Wallet balance is ${output.value0}`);
+        //     for (let i = 0; i < RcvrsNum; i++) {
+        //         var output = await callGetFunctionNoAccept(DropRcvrAddress[i], TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        //         console.log(`DropRcvr${i} Wallet balance is ${output.value0}`);
+        //     }
 
-        }
+        // }
 
 
 
@@ -321,38 +332,17 @@ async function getTokensFromGiver(dest, value) {
     //////////
     //LOCAL SE
 
-    // const params = {
-    //     send_events: false,
-    //     message_encode_params: {
-    //         address: GIVER_ADDRESS,
-    //         abi: abiContract(GIVER_ABI),
-    //         call_set: {
-    //             function_name: 'sendTransaction',
-    //             input: {
-    //                 dest,
-    //                 value,
-    //                 bounce: false,
-    //             },
-    //         },
-    //         signer: {
-    //             type: 'Keys',
-    //             keys: GIVER_KEYS,
-    //         },
-    //     },
-    // };
-
-    //////////
-    //DEV NET
     const params = {
         send_events: false,
         message_encode_params: {
             address: GIVER_ADDRESS,
             abi: abiContract(GIVER_ABI),
             call_set: {
-                function_name: 'sendTransactionSimple',
+                function_name: 'sendTransaction',
                 input: {
                     dest,
                     value,
+                    bounce: false,
                 },
             },
             signer: {
@@ -361,6 +351,27 @@ async function getTokensFromGiver(dest, value) {
             },
         },
     };
+
+    //////////
+    //DEV NET
+    // const params = {
+    //     send_events: false,
+    //     message_encode_params: {
+    //         address: GIVER_ADDRESS,
+    //         abi: abiContract(GIVER_ABI),
+    //         call_set: {
+    //             function_name: 'sendTransactionSimple',
+    //             input: {
+    //                 dest,
+    //                 value,
+    //             },
+    //         },
+    //         signer: {
+    //             type: 'Keys',
+    //             keys: GIVER_KEYS,
+    //         },
+    //     },
+    // };
     await client.processing.process_message(params);
     console.log('Success. Tokens were transfered\n');
 }

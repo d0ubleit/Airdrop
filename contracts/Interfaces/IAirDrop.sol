@@ -11,5 +11,10 @@ interface IAirDrop {
         address[] arrayAddresses,
         uint256[] arrayValues
     ) external;
+
+    function getTokensBack(
+        address clientWalletAddress,
+        uint128 amount
+        ) external;
     
 }

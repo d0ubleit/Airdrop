@@ -113,4 +113,15 @@ contract ClientAirDrop is ACheckOwner {
     }
 
 
+    function requireTokensBack(uint128 amount) public {
+        tvm.accept();
+        uint128 tokensBack_required_value = 150000000; 
+        address clientWalletAddress = token_wallet;
+        IAirDrop(AirDropAddress).getTokensBack{
+                value: tokensBack_required_value,
+                flag: MsgFlag.SENDER_PAYS_FEES
+            }(clientWalletAddress, amount);
+    }
+
+
 }

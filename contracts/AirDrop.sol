@@ -230,29 +230,47 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
         );
     }
 
-    function getTokensBack(uint128 amount) external view {
-        uint256 tokensBack_required_value = 150000000;
-        
-        
-        
+    function getTokensBack(address clientWalletAddress, uint128 amount) external view {
         require(depositors.exists(msg.sender) && amount <= depositors[msg.sender], 104);
-        
-        tvm.rawReserve(address(this).balance - msg.value, 2);
+        uint256 tokensBack_required_value = 150000000;
         require(msg.value >= tokensBack_required_value, 105);
 
-        
+        tvm.rawReserve(address(this).balance - msg.value, 0);
+              
         // Transfer tokens
         TvmCell empty;
         ITONTokenWallet(token_wallet).transfer{
             value: 0,
             flag: MsgFlag.ALL_NOT_RESERVED
         }(
-            msg.sender,
+            clientWalletAddress,
             amount,
-            transfer_grams,
+            uint128(tokensBack_required_value),
             msg.sender,
             false,
             empty
         );
     }
+
+    // function getTokensBack(uint128 amount) external view {
+    //     require(depositors.exists(msg.sender) && amount <= depositors[msg.sender], 104);
+    //     uint256 tokensBack_required_value = 150000000;
+    //     require(msg.value >= tokensBack_required_value, 105);
+
+    //     tvm.rawReserve(address(this).balance - msg.value, 0);
+              
+    //     // Transfer tokens
+    //     TvmCell empty;
+    //     ITONTokenWallet(token_wallet).transfer{
+    //         value: msg.value,
+    //         flag: MsgFlag.ALL_NOT_RESERVED
+    //     }(
+    //         msg.sender,
+    //         amount,
+    //         transfer_grams,
+    //         msg.sender,
+    //         false,
+    //         empty
+    //     );
+    // }
 }

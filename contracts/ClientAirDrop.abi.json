@@ -45,6 +45,14 @@
 				{"name":"_token","type":"address"},
 				{"name":"_token_wallet","type":"address"}
 			]
+		},
+		{
+			"name": "requireTokensBack",
+			"inputs": [
+				{"name":"amount","type":"uint128"}
+			],
+			"outputs": [
+			]
 		}
 	],
 	"data": [
