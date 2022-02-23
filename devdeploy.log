@@ -1,0 +1,121 @@
+----------------------------------------------------------------
+----------------------------------------------------------------
+Future address of RootTokenContract contract is: 0:a6148f0843494ba6f54529fc611163addd918e810375e2540da3ee028fd99037
+Transfering 6000000000 tokens from giver to 0:a6148f0843494ba6f54529fc611163addd918e810375e2540da3ee028fd99037
+Success. Tokens were transfered
+
+Deploying RootTokenContract contract
+Success. Contract was deployed
+
+Check Root by calling method getDetails
+Future address of AirDrop contract is: 0:e87a51415469066a3df7322353da9cbd907ea97ee4eb498cc855961f696cf0cb
+Transfering 3000000000 tokens from giver to 0:e87a51415469066a3df7322353da9cbd907ea97ee4eb498cc855961f696cf0cb
+Success. Tokens were transfered
+
+Deploying AirDrop contract
+Success. Contract was deployed
+
+Check AirDrop by calling method getDetails and get AirDrop Wallet address
+AirDrop Wallet address is 0:861dddc47a45d7f353e31e010ea81bab96d3709ffad0e29b6e8cca9415b21d3d
+
+Future address of ClientAirDrop contract is: 0:3e025b0dd3bd1c1b991a47134e368fcd795e23b9d05d4f41687f4a3547a8e919
+Transfering 4000000000 tokens from giver to 0:3e025b0dd3bd1c1b991a47134e368fcd795e23b9d05d4f41687f4a3547a8e919
+Success. Tokens were transfered
+
+Deploying ClientAirDrop contract
+Success. Contract was deployed
+
+ClientAirDrop Wallet address is 0:b49f127b3522b66d50e9a4fb4807139ba6b9fbd239eb35beeef799d1a15dd83c
+Minting 100 tokens to Client Wallet
+Calling mint function
+Success. TransactionId is: 8ce09cb05d80e8158a7697b61e24524cc20d9e2141f2d5006c4d9d45cabacbde 
+
+Check Client wallet balance
+Client Wallet balance is 1000000
+
+Deploying DropRcvr0 Wallet
+Calling deployWallet function
+Success. TransactionId is: ff6f865ba1458a904cc7d8ede77211858d6ac98b998eb0da7a7051709849a6c6 
+
+DropRcvr0 wallet address is 0:385161870e018c62656471256fc42b5ea515283deffeaa3cc87c07c4a174309c
+DropRcvr0 Wallet balance is 1
+
+Calling deployWallet function
+Success. TransactionId is: 0e38bb602c200db49cd055380c0a67805d575c9cb5d7305993f56ce84b1a3fae 
+
+DropRcvr1 wallet address is 0:71596ca0a7113d4ab088d9a74cc4dab0fb276f62d08ba042017e9d8bd23a1393
+Calling deployWallet function
+Success. TransactionId is: 97f848af9b8a4fb3e261a3104ed3bbb4ebd5961a4d506409e0a706ef17a328ed 
+
+DropRcvr2 wallet address is 0:2c44daa94bb7d28f2198d6bd4c15d590908ef2b8c597c612cc8dd2fae199fa58
+Calling deployWallet function
+Success. TransactionId is: 05272e00f277579f87dc580eab2ea94bea2898accbe9ca48b9082b3071807c78 
+
+DropRcvr3 wallet address is 0:b2c6d212fff2896739c5f083a1ecc9b2d635d8223168c16163b3e0990c9bb3ab
+Calling deployWallet function
+Success. TransactionId is: bed8c5f0c03054608364ac5d8475c50fc9ad430501d0fb0d8905d72c80961780 
+
+DropRcvr4 wallet address is 0:4e0930e0edb2e7849eadcaa980588e91b0f4f1b9aeda87d2753fc1d633777ffa
+Calling deployWallet function
+Success. TransactionId is: 097f70e4e589c54a337ac8d1dda0e36442aed5d9b18aba306a03ffe1c2f02663 
+
+DropRcvr5 wallet address is 0:b5007a6cb9419ad971a7e70df734cfa626a4d06dd51969ee151a193e0c8be6a8
+Calling deployWallet function
+Success. TransactionId is: 40b7fbfdb261872cede1a4dee33d134060de7cbf9e18eec7dee375bb5d9620ca 
+
+DropRcvr6 wallet address is 0:0a2497d56d326f4d7086ae1a7ef908d4eb6aebd7af47fe36a087a761854f9119
+Calling deployWallet function
+Success. TransactionId is: d05acf8f70a9c43aa60fa33ca3830f09bd565b03add7ad53f0a0115ae68291f9 
+
+DropRcvr7 wallet address is 0:282d24dac7c5dc792505ac9c21a3b5533df8a8c6dc5a3ba6459356ef209e0ad0
+Calling deployWallet function
+Success. TransactionId is: e4454af00c55064ad85251c763d19b0486a6c83596cc0e6281ff6eb3fa32220c 
+
+DropRcvr8 wallet address is 0:9cc01fa28e0b0966938ceb41069c79d9114c8bc764409b8d852b315bae3ab3d0
+Calling deployWallet function
+Success. TransactionId is: 7f154d93d89f79568337b4bed15b577552102f027a5dab54c18c7de18c725e28 
+
+DropRcvr9 wallet address is 0:3353098efd934d9020b6c030fecfd3018ec8fc737a69c066de1a587e3c856a19
+Calling transferTokensForAirDrop function
+Success. TransactionId is: 1be548c44a364ee2bcd8cb50c79fbb4175c381dde2071a0d1b6a664189b8050b 
+
+Client Wallet balance is 0
+AirDrop Wallet balance is 1000000
+
+Check AirDrop depositors list
+Success. Account downloaded.
+Run depositors function locally
+Success. Output is: {
+  depositors: {
+    '0:3e025b0dd3bd1c1b991a47134e368fcd795e23b9d05d4f41687f4a3547a8e919': '1000000'
+  }
+}
+
+Test AirDrop function at CLIENTAIRDROP contract
+Calling doAirDrop function
+Success. TransactionId is: 831b6860cbf07abc3266e343fd1d1e36fefaead1d4eb9b899c632d7e6b0cdf33 
+
+Check balances:
+AirDrop Wallet balance is 999945
+DropRcvr0 Wallet balance is 2
+DropRcvr1 Wallet balance is 4
+DropRcvr2 Wallet balance is 6
+DropRcvr3 Wallet balance is 8
+DropRcvr4 Wallet balance is 10
+DropRcvr5 Wallet balance is 12
+DropRcvr6 Wallet balance is 14
+DropRcvr7 Wallet balance is 16
+DropRcvr8 Wallet balance is 18
+DropRcvr9 Wallet balance is 20
+Check balances:
+AirDrop Wallet balance is 999945
+DropRcvr0 Wallet balance is 2
+DropRcvr1 Wallet balance is 4
+DropRcvr2 Wallet balance is 6
+DropRcvr3 Wallet balance is 8
+DropRcvr4 Wallet balance is 10
+DropRcvr5 Wallet balance is 12
+DropRcvr6 Wallet balance is 14
+DropRcvr7 Wallet balance is 16
+DropRcvr8 Wallet balance is 18
+DropRcvr9 Wallet balance is 20
