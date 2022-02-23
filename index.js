@@ -42,9 +42,9 @@ const GIVER_ADDRESS = '0:b5e9240fc2d2f1ff8cbb1d1dee7fb7cae155e5f6320e585fcc68569
 // use  `@tonclient/lib-web` and `@tonclient/lib-react-native` packages accordingly
 // (see README in  https://github.com/tonlabs/ton-client-js)
 
-const RootToken_ABI = require('./contracts/RootTokenContract.abi.json');
+const RootToken_ABI = require('./contracts/TokenRoot.abi.json');
 // const RootToken_TVC = fs.readFileSync('./contracts/RootTokenContract.tvc', 'base64');
-const RootToken_TVC = fs.readFileSync(contractsDir + 'RootTokenContract.tvc', 'base64');
+const RootToken_TVC = fs.readFileSync(contractsDir + 'TokenRoot.tvc', 'base64');
 
 ////////////////Get from giver
 const giverRootAmount = 6_000_000_000;
@@ -56,6 +56,8 @@ const RcvrsNum = 10;
 const tokensMintNum = 1000000;
 ////////////////Tokens send for AirDrop (must be less than tokensMintNum)
 const tokensToAirDrop = 1000000;
+
+const transferGrams = 100_000_000
 
 
 TonClient.useBinaryLibrary(libNode);
@@ -73,18 +75,22 @@ var runProcess = childProcess.execSync('cd contracts && tondev sol compile AirDr
 const AirDrop_ABI = require('./contracts/AirDrop.abi.json');
 const AirDrop_TVC = fs.readFileSync(contractsDir + 'AirDrop.tvc', 'base64');
 
-var childProcess = require('child_process');
-var runProcess = childProcess.execSync('cd contracts && tondev sol compile ClientAirDrop.sol').toString();
-const ClientAirDrop_ABI = require('./contracts/ClientAirDrop.abi.json');
-const ClientAirDrop_TVC = fs.readFileSync(contractsDir + 'ClientAirDrop.tvc', 'base64');
+// var childProcess = require('child_process');
+// var runProcess = childProcess.execSync('cd contracts && tondev sol compile ClientAirDrop.sol').toString();
+// const ClientAirDrop_ABI = require('./contracts/ClientAirDrop.abi.json');
+// const ClientAirDrop_TVC = fs.readFileSync(contractsDir + 'ClientAirDrop.tvc', 'base64');
 
-const TONTokenWallet_ABI = require('./contracts/TONTokenWallet.abi.json');
+const TONTokenWallet_ABI = require('./contracts/TokenWallet.abi.json');
+const TONTokenWallet_TVC = fs.readFileSync(contractsDir + 'TokenWallet.tvc', 'base64');
 
 const ZeroAddress = "0:0000000000000000000000000000000000000000000000000000000000000000";
 const sep = "----------------------------------------------------------------";
 
 (async () => {
     try {
+        const EmptyCell = (await client.boc.encode_boc({
+            builder: [],
+        })).boc;
         console.log(`${sep}`);
         console.log(`${sep}`);
         // Generate an ed25519 key pair
@@ -92,10 +98,16 @@ const sep = "----------------------------------------------------------------";
 
         //Create RootToken DeployMsg
         var deployData = require('./contracts/data.json');
-        var deployInput = {
-            "root_public_key_": "0x" + RootTokenKeys.public,
-            "root_owner_address_": ZeroAddress //For external deploy
-        }
+        var deployInput = require('./contracts/input.json');
+        const RootToken_TVC_decoded = await client.boc.decode_tvc({
+            tvc: TONTokenWallet_TVC,
+        });
+        deployData.walletCode_ = RootToken_TVC_decoded.code;
+        
+        // var deployInput = {
+        //     "root_public_key_": "0x" + RootTokenKeys.public,
+        //     "root_owner_address_": ZeroAddress //For external deploy
+        // }
         var deployMsg = buildDeployOptions(RootTokenKeys, RootToken_ABI, RootToken_TVC, deployData, deployInput);
 
 
@@ -107,11 +119,9 @@ const sep = "----------------------------------------------------------------";
 
         //Deploy RootTokenWallet
         await deployWallet(deployMsg, "RootTokenContract");
-        console.log(`Check Root by calling method getDetails`);
-        await callGetFunctionNoAccept(RootTokenAddress, RootToken_ABI, "getDetails", { "_answer_id": 0 });
+        console.log(`Check Root by calling method 'name'`);
+        await callGetFunctionNoAccept(RootTokenAddress, RootToken_ABI, "name", { "answerId": 0 }, true);
 
-
-        // console.log(`--------------End here`);
 
         deployInput = { "_token": RootTokenAddress };
         deployMsg = buildDeployOptions(RootTokenKeys, AirDrop_ABI, AirDrop_TVC, deployData = {}, deployInput);
@@ -127,135 +137,155 @@ const sep = "----------------------------------------------------------------";
         console.log(`AirDrop Wallet address is ${AirDropWalletAddress}\n`);
         // await callGetFunctionWithAccept(AirDropAddress, AirDrop_ABI, "getDetails")
 
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
-        /////////////CHECK MINTING
-        // console.log(`Lets try to mint 10 tokens to AirDrop Wallet address`);
-        // await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "mint", { "tokens": 10, "to": AirDropWalletAddress });
-        // console.log(`Check total supply`);
-        // output = await callGetFunctionNoAccept(RootTokenAddress, RootToken_ABI, "getDetails", { "_answer_id": 0 });
-        // console.log(`total supply = ${output.value0.total_supply}`);
-
-        ///////////////////////////
-        //AirDropClient
-        ///////////////////////////
-        const ClientAirDropKeys = await client.crypto.generate_random_sign_keys();
-
-        deployInput = {
-            "_token": RootTokenAddress,
-            "_AirDropAddress": AirDropAddress,
-            "_AirDropWalletAddress": AirDropWalletAddress
-        };
-        deployMsg = buildDeployOptions(ClientAirDropKeys, ClientAirDrop_ABI, ClientAirDrop_TVC, deployData = {}, deployInput);
-        const ClientAirDropAddress = await calcAddress(deployMsg, "ClientAirDrop");
-        await getTokensFromGiver(ClientAirDropAddress, giverClientAmount);
-        await deployWallet(deployMsg, "ClientAirDrop");
-
-        var output = await callGetFunctionNoAccept(ClientAirDropAddress, ClientAirDrop_ABI, "getDetails");
-        const ClientAirDropWalletAddress = output._token_wallet;
-        console.log(`ClientAirDrop Wallet address is ${ClientAirDropWalletAddress}`);
-
-        /////////
-        //Mint tokens to client wallet
-        console.log(`Minting ${tokensMintNum} tokens to Client Wallet`);
-        await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "mint", { "tokens": tokensMintNum, "to": ClientAirDropWalletAddress });
-        console.log(`Check Client wallet balance`);
-        var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-        console.log(`Client Wallet balance is ${output.value0}\n`);
+        // // console.log(`--------------End here`);
 
 
-        /////////
-        //Deploy DropRcvr Wallet with 1 token
-        var DropRcvrKeys = [];
-        var DropRcvrAddress = [];
-        DropRcvrKeys.push(await client.crypto.generate_random_sign_keys());
-        console.log(`Deploying DropRcvr0 Wallet`);
+        ///////////CHECK MINTING
+        console.log(`Lets try to mint 10 tokens to AirDrop Wallet address`);
         var inputData = {
-            "tokens": 1,
-            "deploy_grams": 200000000,
-            "wallet_public_key_": "0x" + DropRcvrKeys[0].public,
-            "owner_address_": ZeroAddress,
-            "gas_back_address": RootTokenAddress
-        }
-        var output = await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "deployWallet", inputData);
-        console.log(`DropRcvr0 wallet address is ${output.value0}`);
-        DropRcvrAddress.push(output.value0);
-        // console.log(`Check DropRcvr wallet balance`);
-        var output = await callGetFunctionNoAccept(DropRcvrAddress[0], TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-        console.log(`DropRcvr0 Wallet balance is ${output.value0}\n`);
-
-        /////////
-        //Deploy more DropRcvr Wallets 
-
-        for (let i = 1; i < RcvrsNum; i++) { //i = 1 because we already have 1 Rcvr
-            DropRcvrKeys.push(await client.crypto.generate_random_sign_keys());
-            //console.log(`Deploying DropRcvr${i} Wallet`);
-            var inputData = {
-                "tokens": i + 1,
-                "deploy_grams": 200000000,
-                "wallet_public_key_": "0x" + DropRcvrKeys[i].public,
-                "owner_address_": ZeroAddress,
-                "gas_back_address": RootTokenAddress
+                "amount": 10,
+                "recipient": AirDropWalletAddress,
+                "deployWalletValue": transferGrams,
+                "remainingGasTo" : RootTokenAddress,
+                "notify" : false,
+                "payload" : EmptyCell
+                // "wallet_public_key_": "0x" + DropRcvrKeys[0].public,
+                // "owner_address_": ZeroAddress,
+                // "gas_back_address": RootTokenAddress
             }
-            var output = await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "deployWallet", inputData);
-            console.log(`DropRcvr${i} wallet address is ${output.value0}`);
-            DropRcvrAddress.push(output.value0);
-            // console.log(`Check DropRcvr wallet balance`);
-            // var output = await callGetFunctionNoAccept(DropRcvrAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-            // console.log(`DropRcvr Wallet balance is ${output.value0}\n`);
+        await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "mint", inputData);
+        console.log(`Check total supply`);
+        output = await callGetFunctionNoAccept(RootTokenAddress, RootToken_ABI, "totalSupply", { "answerId": 0 });
+        console.log(`total supply = ${output.value0.total_supply}`);
 
-        }
+        // ///////////////////////////
+        // //AirDropClient
+        // ///////////////////////////
+        // const ClientAirDropKeys = await client.crypto.generate_random_sign_keys();
+
+        // deployInput = {
+        //     "_token": RootTokenAddress,
+        //     "_AirDropAddress": AirDropAddress,
+        //     "_AirDropWalletAddress": AirDropWalletAddress
+        // };
+        // deployMsg = buildDeployOptions(ClientAirDropKeys, ClientAirDrop_ABI, ClientAirDrop_TVC, deployData = {}, deployInput);
+        // const ClientAirDropAddress = await calcAddress(deployMsg, "ClientAirDrop");
+        // await getTokensFromGiver(ClientAirDropAddress, giverClientAmount);
+        // await deployWallet(deployMsg, "ClientAirDrop");
+
+        // var output = await callGetFunctionNoAccept(ClientAirDropAddress, ClientAirDrop_ABI, "getDetails");
+        // const ClientAirDropWalletAddress = output._token_wallet;
+        // console.log(`ClientAirDrop Wallet address is ${ClientAirDropWalletAddress}`);
+
+        // /////////
+        // //Mint tokens to client wallet
+        // console.log(`Minting ${tokensMintNum} tokens to Client Wallet`);
+        // await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "mint", { "tokens": tokensMintNum, "to": ClientAirDropWalletAddress });
+        // console.log(`Check Client wallet balance`);
+        // var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        // console.log(`Client Wallet balance is ${output.value0}\n`);
+
+
+        // /////////
+        // //Deploy DropRcvr Wallet with 1 token
+        // var DropRcvrKeys = [];
+        // var DropRcvrAddress = [];
+        // DropRcvrKeys.push(await client.crypto.generate_random_sign_keys());
+        // console.log(`Deploying DropRcvr0 Wallet`);
+        // inputData = {
+        //     "tokens": 1,
+        //     "deploy_grams": 200000000,
+        //     "wallet_public_key_": "0x" + DropRcvrKeys[0].public,
+        //     "owner_address_": ZeroAddress,
+        //     "gas_back_address": RootTokenAddress
+        // }
+        // var output = await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "deployWallet", inputData);
+        // console.log(`DropRcvr0 wallet address is ${output.value0}`);
+        // DropRcvrAddress.push(output.value0);
+        // // console.log(`Check DropRcvr wallet balance`);
+        // var output = await callGetFunctionNoAccept(DropRcvrAddress[0], TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        // console.log(`DropRcvr0 Wallet balance is ${output.value0}\n`);
+
+        // /////////
+        // //Deploy more DropRcvr Wallets 
+
+        // for (let i = 1; i < RcvrsNum; i++) { //i = 1 because we already have 1 Rcvr
+        //     DropRcvrKeys.push(await client.crypto.generate_random_sign_keys());
+        //     //console.log(`Deploying DropRcvr${i} Wallet`);
+        //     var inputData = {
+        //         "tokens": i + 1,
+        //         "deploy_grams": 200000000,
+        //         "wallet_public_key_": "0x" + DropRcvrKeys[i].public,
+        //         "owner_address_": ZeroAddress,
+        //         "gas_back_address": RootTokenAddress
+        //     }
+        //     var output = await callFunctionSigned(RootTokenKeys, RootTokenAddress, RootToken_ABI, "deployWallet", inputData);
+        //     console.log(`DropRcvr${i} wallet address is ${output.value0}`);
+        //     DropRcvrAddress.push(output.value0);
+        //     // console.log(`Check DropRcvr wallet balance`);
+        //     // var output = await callGetFunctionNoAccept(DropRcvrAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        //     // console.log(`DropRcvr Wallet balance is ${output.value0}\n`);
+
+        // }
 
 
 
-        //////////
-        //Test ClientAirDrop function transferTokensForAirDrop
-        await callFunctionSigned(ClientAirDropKeys, ClientAirDropAddress, ClientAirDrop_ABI, "transferTokensForAirDrop", { "amount": tokensToAirDrop });
+        // //////////
+        // //Test ClientAirDrop function transferTokensForAirDrop
+        // await callFunctionSigned(ClientAirDropKeys, ClientAirDropAddress, ClientAirDrop_ABI, "transferTokensForAirDrop", { "amount": tokensToAirDrop });
 
-        var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-        console.log(`Client Wallet balance is ${output.value0}`);
-
-
-        var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-        console.log(`AirDrop Wallet balance is ${output.value0}\n`);
-
-        // var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "getDetails", { "_answer_id": 0 });
-        // console.log(`AirDrop Wallet balance is ${output.receive_callback}\n\n`);
-
-        console.log(`Check AirDrop depositors list`);
-        var output = await callGetFunctionNoAccept(AirDropAddress, AirDrop_ABI, "depositors", contractFuncInp = {}, true);
-        // console.log(`AirDrop Wallet balance is ${output.depositors}\n\n`);
+        // var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        // console.log(`Client Wallet balance is ${output.value0}`);
 
 
-        var RcvrsAmounts = [];
-        for (let i = 0; i < RcvrsNum; i++) {
-            RcvrsAmounts.push(i + 1);
-        }
+        // var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        // console.log(`AirDrop Wallet balance is ${output.value0}\n`);
 
-        console.log(`Test AirDrop function at CLIENTAIRDROP contract`);
-        await callFunctionSigned(ClientAirDropKeys, ClientAirDropAddress, ClientAirDrop_ABI, "doAirDrop", { "arrayAddresses": DropRcvrAddress, "arrayValues": RcvrsAmounts });
+        // // var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "getDetails", { "_answer_id": 0 });
+        // // console.log(`AirDrop Wallet balance is ${output.receive_callback}\n\n`);
 
-        // console.log(`Test AirDrop function at AIRDROP contract`);
-        // await callFunctionSigned(RootTokenKeys, AirDropAddress, AirDrop_ABI, "AirDrop", { "clientAirDropAddress": ClientAirDropAddress, "arrayAddresses": DropRcvrAddress, "arrayValues": RcvrsAmounts });
+        // console.log(`Check AirDrop depositors list`);
+        // var output = await callGetFunctionNoAccept(AirDropAddress, AirDrop_ABI, "depositors", contractFuncInp = {}, true);
+        // // console.log(`AirDrop Wallet balance is ${output.depositors}\n\n`);
 
-        console.log(`Wait 10 seconds\n`);
-        await sleep(10000)
 
-        console.log(`Check balances:`);
-        var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-        console.log(`AirDrop Wallet balance is ${output.value0}`);
-        for (let i = 0; i < RcvrsNum; i++) {
-            var output = await callGetFunctionNoAccept(DropRcvrAddress[i], TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-            console.log(`DropRcvr${i} Wallet balance is ${output.value0}`);
-        }
+        // var RcvrsAmounts = [];
+        // for (let i = 0; i < RcvrsNum; i++) {
+        //     RcvrsAmounts.push(i + 1);
+        // }
+
+        // console.log(`Test AirDrop function at CLIENTAIRDROP contract`);
+        // await callFunctionSigned(ClientAirDropKeys, ClientAirDropAddress, ClientAirDrop_ABI, "doAirDrop", { "arrayAddresses": DropRcvrAddress, "arrayValues": RcvrsAmounts });
+
+        // // console.log(`Test AirDrop function at AIRDROP contract`);
+        // // await callFunctionSigned(RootTokenKeys, AirDropAddress, AirDrop_ABI, "AirDrop", { "clientAirDropAddress": ClientAirDropAddress, "arrayAddresses": DropRcvrAddress, "arrayValues": RcvrsAmounts });
+
+        // console.log(`Wait 10 seconds\n`);
+        // await sleep(10000)
+
+        // console.log(`Check balances:`);
+        // var output = await callGetFunctionNoAccept(AirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        // console.log(`AirDrop Wallet balance is ${output.value0}`);
+        // for (let i = 0; i < RcvrsNum; i++) {
+        //     var output = await callGetFunctionNoAccept(DropRcvrAddress[i], TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        //     console.log(`DropRcvr${i} Wallet balance is ${output.value0}`);
+        // }
 
         
-        var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-        console.log(`ClientAirDrop Wallet balance is ${output.value0}`);
-        console.log(`Get some tokens back`);
-        await callFunctionSigned(ClientAirDropKeys, ClientAirDropAddress, ClientAirDrop_ABI, "requireTokensBack", { "amount": 100});
-        await sleep(100)
-        var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
-        console.log(`ClientAirDrop Wallet balance is ${output.value0}`);
+        // var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        // console.log(`ClientAirDrop Wallet balance is ${output.value0}`);
+        // console.log(`Get some tokens back`);
+        // await callFunctionSigned(ClientAirDropKeys, ClientAirDropAddress, ClientAirDrop_ABI, "requireTokensBack", { "amount": 100});
+        // await sleep(100)
+        // var output = await callGetFunctionNoAccept(ClientAirDropWalletAddress, TONTokenWallet_ABI, "balance", { "_answer_id": 0 });
+        // console.log(`ClientAirDrop Wallet balance is ${output.value0}`);
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 
 

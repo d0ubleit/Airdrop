@@ -3,10 +3,10 @@ pragma AbiHeader time;
 pragma AbiHeader expire;
 pragma AbiHeader pubkey;
 
-import "Interfaces/IRootTokenContract.sol";
-import "Interfaces/ITONTokenWallet.sol";
-import "Interfaces/ITokensReceivedCallback.sol";
-import "Libraries/MsgFlag.sol";
+import "interfaces/ITokenRoot.sol";
+import "interfaces/ITokenWallet.sol";
+import "interfaces/IAcceptTokensTransferCallback.sol";
+import "libraries/TokenMsgFlag.sol";
 import "ACheckOwner.sol";
 
 
@@ -28,7 +28,7 @@ struct Callback {
 }
 
 // part of main Airdrop SC (edit what you need)
-contract Airdrop is ACheckOwner, ITokensReceivedCallback {
+contract Airdrop is ACheckOwner, IAcceptTokensTransferCallback {
     address token;
     address token_wallet;
 
@@ -76,12 +76,12 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
             {
         // calling transfer function from contract //
             TvmCell empty;
-            ITONTokenWallet(token_wallet).transfer{
+            ITokenWallet(token_wallet).transfer{
                 value: transfer_grams,
                 flag: 0
             }(
-                arrayAddresses[i],
                 uint128(arrayValues[i]),
+                arrayAddresses[i],
                 transfer_grams,
                 clientAirDropAddress,
                 false,
@@ -107,25 +107,23 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
         if (rc.hasValue()) {(uint number, ) = rc.get();return number;} else {return 0;}
     }
     
-    
-    function tokensReceivedCallback(
-        address token_wallet,
-        address token_root,
+
+    function onAcceptTokensTransfer(
+        address tokenRoot,
         uint128 amount,
-        uint256 sender_public_key,
-        address sender_address,
-        address sender_wallet,
-        address original_gas_to,
-        uint128 updated_balance,
+        address sender,
+        address senderWallet,
+        address remainingGasTo,
         TvmCell payload
-    ) external override {
+        ) external override {
+
         tvm.accept();
         
-        if (depositors.exists(sender_address)) {
-            depositors[sender_address] += amount;
+        if (depositors.exists(senderWallet)) {
+            depositors[senderWallet] += amount;
         }
         else {
-            depositors[sender_address] = amount;
+            depositors[senderWallet] = amount;
         }
         counterCallback++;
         
@@ -152,66 +150,67 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
     }
 
    // Function for get callback
-    function getCallback(uint id) public view checkOwnerAndAccept returns (
-        address token_wallet,
-        address token_root,
-        uint128 amount,
-        uint256 sender_public_key,
-        address sender_address,
-        address sender_wallet,
-        address original_gas_to,
-        uint128 updated_balance,
-        uint8 payload_arg0,
-        address payload_arg1,
-        address payload_arg2,
-        uint128 payload_arg3,
-        uint128 payload_arg4
-    ){
-        Callback cc = callbacks[id];
-        token_wallet = cc.token_wallet;
-        token_root = cc.token_root;
-        amount = cc.amount;
-        sender_public_key = cc.sender_public_key;
-        sender_address = cc.sender_address;
-        sender_wallet = cc.sender_wallet;
-        original_gas_to = cc.original_gas_to;
-        updated_balance = cc.updated_balance;
-        payload_arg0 = cc.payload_arg0;
-        payload_arg1 = cc.payload_arg1;
-        payload_arg2 = cc.payload_arg2;
-        payload_arg3 = cc.payload_arg3;
-        payload_arg4 = cc.payload_arg4;
-    }
+    // function getCallback(uint id) public view checkOwnerAndAccept returns (
+    //     address token_wallet,
+    //     address token_root,
+    //     uint128 amount,
+    //     uint256 sender_public_key,
+    //     address sender_address,
+    //     address sender_wallet,
+    //     address original_gas_to,
+    //     uint128 updated_balance,
+    //     uint8 payload_arg0,
+    //     address payload_arg1,
+    //     address payload_arg2,
+    //     uint128 payload_arg3,
+    //     uint128 payload_arg4
+    // ){
+    //     Callback cc = callbacks[id];
+    //     token_wallet = cc.token_wallet;
+    //     token_root = cc.token_root;
+    //     amount = cc.amount;
+    //     sender_public_key = cc.sender_public_key;
+    //     sender_address = cc.sender_address;
+    //     sender_wallet = cc.sender_wallet;
+    //     original_gas_to = cc.original_gas_to;
+    //     updated_balance = cc.updated_balance;
+    //     payload_arg0 = cc.payload_arg0;
+    //     payload_arg1 = cc.payload_arg1;
+    //     payload_arg2 = cc.payload_arg2;
+    //     payload_arg3 = cc.payload_arg3;
+    //     payload_arg4 = cc.payload_arg4;
+    // }
 
 
     function setUpTokenWallet() internal view {
         // Deploy token wallet
-        IRootTokenContract(token).deployEmptyWallet{value: 1 ton}(
-            deploy_wallet_grams,
-            0,
+        ITokenRoot(token).deployWallet{
+            value: 1 ton,
+            callback: Airdrop.setTokenWalletAddress
+            }(
             address(this),
-            address(this)
+            deploy_wallet_grams
         );
 
         // Request for token wallet address
-        IRootTokenContract(token).getWalletAddress{
-            value: 1 ton,
-            callback: Airdrop.setTokenWalletAddress
-        }(0, address(this));
+        // IRootTokenContract(token).getWalletAddress{
+        //     value: 1 ton,
+        //     callback: Airdrop.setTokenWalletAddress
+        // }(0, address(this));
     }
     
     function setTokenWalletAddress(address wallet) external {
         require(msg.sender == token, 103);
         token_wallet = wallet;
-        setReceiveCallback();
+        // setReceiveCallback();
     }
 
-    function setReceiveCallback() private {
-        ITONTokenWallet(token_wallet).setReceiveCallback{value: settings_grams}(
-            address(this),
-            true
-        );
-    }
+    // function setReceiveCallback() private {
+    //     ITokenWallet(token_wallet).setReceiveCallback{value: settings_grams}(
+    //         address(this),
+    //         true
+    //     );
+    // }
 
     // add every info we need here
     function getDetails() external view returns(
@@ -239,12 +238,12 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
               
         // Transfer tokens
         TvmCell empty;
-        ITONTokenWallet(token_wallet).transfer{
+        ITokenWallet(token_wallet).transfer{
             value: 0,
-            flag: MsgFlag.ALL_NOT_RESERVED
-        }(
-            clientWalletAddress,
+            flag: TokenMsgFlag.ALL_NOT_RESERVED
+        }(  
             amount,
+            clientWalletAddress,
             uint128(tokensBack_required_value),
             msg.sender,
             false,
@@ -261,7 +260,7 @@ contract Airdrop is ACheckOwner, ITokensReceivedCallback {
               
     //     // Transfer tokens
     //     TvmCell empty;
-    //     ITONTokenWallet(token_wallet).transfer{
+    //     ITokenWallet(token_wallet).transfer{
     //         value: msg.value,
     //         flag: MsgFlag.ALL_NOT_RESERVED
     //     }(

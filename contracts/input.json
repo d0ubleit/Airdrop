@@ -1,4 +1,9 @@
 {
-    "root_public_key_": "",
-    "root_owner_address_": 123456789
+    "initialSupplyTo":"0:0000000000000000000000000000000000000000000000000000000000000000",
+    "initialSupply":0,
+    "deployWalletValue":100000000,
+    "mintDisabled":false,
+    "burnByRootDisabled":false,
+    "burnPaused":false,
+    "remainingGasTo":"0:0000000000000000000000000000000000000000000000000000000000000000"
 }

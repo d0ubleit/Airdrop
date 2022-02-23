@@ -1,5 +1,6 @@
 {
 	"ABI version": 2,
+	"version": "2.2",
 	"header": ["pubkey", "time", "expire"],
 	"functions": [
 		{
@@ -21,40 +22,16 @@
 			]
 		},
 		{
-			"name": "tokensReceivedCallback",
+			"name": "onAcceptTokensTransfer",
 			"inputs": [
-				{"name":"token_wallet","type":"address"},
-				{"name":"token_root","type":"address"},
+				{"name":"tokenRoot","type":"address"},
 				{"name":"amount","type":"uint128"},
-				{"name":"sender_public_key","type":"uint256"},
-				{"name":"sender_address","type":"address"},
-				{"name":"sender_wallet","type":"address"},
-				{"name":"original_gas_to","type":"address"},
-				{"name":"updated_balance","type":"uint128"},
+				{"name":"sender","type":"address"},
+				{"name":"senderWallet","type":"address"},
+				{"name":"remainingGasTo","type":"address"},
 				{"name":"payload","type":"cell"}
 			],
 			"outputs": [
-			]
-		},
-		{
-			"name": "getCallback",
-			"inputs": [
-				{"name":"id","type":"uint256"}
-			],
-			"outputs": [
-				{"name":"token_wallet","type":"address"},
-				{"name":"token_root","type":"address"},
-				{"name":"amount","type":"uint128"},
-				{"name":"sender_public_key","type":"uint256"},
-				{"name":"sender_address","type":"address"},
-				{"name":"sender_wallet","type":"address"},
-				{"name":"original_gas_to","type":"address"},
-				{"name":"updated_balance","type":"uint128"},
-				{"name":"payload_arg0","type":"uint8"},
-				{"name":"payload_arg1","type":"address"},
-				{"name":"payload_arg2","type":"address"},
-				{"name":"payload_arg3","type":"uint128"},
-				{"name":"payload_arg4","type":"uint128"}
 			]
 		},
 		{
@@ -114,5 +91,16 @@
 	"data": [
 	],
 	"events": [
+	],
+	"fields": [
+		{"name":"_pubkey","type":"uint256"},
+		{"name":"_timestamp","type":"uint64"},
+		{"name":"_constructorFlag","type":"bool"},
+		{"name":"token","type":"address"},
+		{"name":"token_wallet","type":"address"},
+		{"name":"depositors","type":"map(address,uint128)"},
+		{"components":[{"name":"token_wallet","type":"address"},{"name":"token_root","type":"address"},{"name":"amount","type":"uint128"},{"name":"sender_public_key","type":"uint256"},{"name":"sender_address","type":"address"},{"name":"sender_wallet","type":"address"},{"name":"original_gas_to","type":"address"},{"name":"updated_balance","type":"uint128"},{"name":"payload_arg0","type":"uint8"},{"name":"payload_arg1","type":"address"},{"name":"payload_arg2","type":"address"},{"name":"payload_arg3","type":"uint128"},{"name":"payload_arg4","type":"uint128"}],"name":"callbacks","type":"map(uint256,tuple)"},
+		{"name":"counterCallback","type":"uint256"},
+		{"name":"transferred_count","type":"uint128"}
 	]
 }
